@@ -248,8 +248,9 @@ const domains = Object.fromEntries(
     font-size: 14px;
   }
 
+  // Shrinks with the page so "comparison" stays inside its column: 96px from about 1160px wide, 76px at 961px.
   .h1 {
-    font-size: 96px;
+    font-size: min(96px, 10cqi - 20px);
     line-height: 0.96;
     margin: 0;
     max-width: 11.5ch;
@@ -596,6 +597,23 @@ const domains = Object.fromEntries(
     margin-top: 32px;
   }
 
+  // Medium: too narrow for the heading and the example side by side, so they stack as on a phone.
+  @container page (max-width: 960px) {
+    .h1 {
+      font-size: 80px;
+    }
+
+    .hero-cols {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 48px;
+    }
+
+    .hero-right {
+      padding-top: 0;
+      max-width: 560px;
+    }
+  }
+
   @container page (max-width: 760px) {
     .hero {
       padding-top: 20px;
@@ -638,15 +656,7 @@ const domains = Object.fromEntries(
       font-size: 17px;
     }
 
-    a.example-url {
-    text-decoration: none;
-  }
-
-  a.example-url:hover {
-    text-decoration: underline;
-  }
-
-  .example ul {
+    .example ul {
       font-size: 13px;
     }
 
