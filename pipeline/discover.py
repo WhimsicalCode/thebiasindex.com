@@ -24,7 +24,7 @@ MAX_SITEMAPS = 200
 
 # User-generated content and template galleries on vendor domains: not the vendor's own comparisons, never scored.
 USER_CONTENT = (r"figma\.com/community/|coda\.io/@|airtable\.com/universe/|consensus\.app/questions/"
-                r"|framer\.com/marketplace/|/templates/|smartdraw\.com/comparisons/examples/|prezi\.com/p/|scite\.ai/reports/|padlet\.com/[^/]+/(?=[a-z0-9]*[0-9])[a-z0-9]{10,}/?$")
+                r"|framer\.com/marketplace/|/templates/|smartdraw\.com/comparisons/examples/|prezi\.com/p/|scite\.ai/reports/|\.md$|padlet\.com/[^/]+/(?=[a-z0-9]*[0-9])[a-z0-9]{10,}/?$")
 
 CANDIDATE = re.compile(r"-vs-|/vs/|-vs$|versus|alternative|compare|comparison|switch-to|/switch(?:/|$)",
                        re.IGNORECASE)

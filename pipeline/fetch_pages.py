@@ -16,6 +16,7 @@ import threading
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from html import unescape
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
@@ -24,7 +25,9 @@ import httpx
 from bs4 import BeautifulSoup
 
 USER_AGENT = "BiasIndexBot/0.1 (+https://thebiasindex.com/bot)"
-HEADERS = {"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.8"}  # Zoho geo-targets its language
+# Zoho geo-targets its language; without an Accept header Vercel answers bots with Markdown.
+HEADERS = {"User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+           "Accept-Language": "en-US,en;q=0.8"}
 DELAY_S = 1.0
 # Stop fetching a host after this many blocked responses in a row (Pipedrive answers 429 to every bot request).
 BLOCKED_STATUSES = {403, 429, 503}
@@ -73,6 +76,8 @@ LANG = re.compile(r"<html[^>]*\blang=[\"']?([A-Za-z-]+)", re.IGNORECASE)
 CANONICAL = re.compile(r"<link[^>]+rel=[\"']?canonical[\"']?[^>]*>", re.IGNORECASE)
 HREF = re.compile(r"href=[\"']([^\"']+)", re.IGNORECASE)
 TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+H1 = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
+FRONT_MATTER_TITLE = re.compile(r"\A---\s*\n(?:.*\n)*?title:\s*[\"']?(.+?)[\"']?\s*\n", re.MULTILINE)
 
 
 # Page chrome removed before extraction. Kept deliberately simple so the rule fits in one sentence on the
@@ -114,12 +119,31 @@ def page_metadata(html, url):
     lang = LANG.search(html[:5000])
     canonical = CANONICAL.search(html)
     href = HREF.search(canonical.group(0)) if canonical else None
-    title = TITLE.search(html)
     return {
         "lang": lang.group(1) if lang else "",
         "canonical_url": urljoin(url, href.group(1)) if href else "",
-        "title": re.sub(r"\s+", " ", title.group(1)).strip() if title else "",
+        "title": page_title(html),
     }
+
+
+def clean(fragment):
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", fragment))).strip()
+
+
+def page_title(html):
+    """The <title>, or the first <h1> when the <title> is only a brand name (every mermaid.ai comparison is titled
+    "Mermaid"), or the front matter title of a Markdown answer."""
+    title = TITLE.search(html)
+    title = clean(title.group(1)) if title else ""
+    if len(title.split()) <= 2:
+        h1 = H1.search(html)
+        heading = clean(h1.group(1)) if h1 else ""
+        if len(heading.split()) > len(title.split()):
+            return heading
+    if not title:
+        front = FRONT_MATTER_TITLE.search(html[:2000])
+        return clean(front.group(1)) if front else ""
+    return title
 
 
 def robots_for(client, host):

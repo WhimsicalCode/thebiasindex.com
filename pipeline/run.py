@@ -206,9 +206,11 @@ def main():
         slug = entry["domain"]
         sitemap_urls, urls = candidates[entry["company"]]
         # Pages found in earlier weeks are checked again even when this week's sitemap leaves them out (some sitemaps
-        # vary by visitor location). A page drops out once it's gone: a 404 or 410.
+        # vary by visitor location). A page drops out once it's gone (a 404 or 410) or excluded since it was first seen.
+        excluded = re.compile(discover.USER_CONTENT)
         known = {url for url, status in db.execute("select url, http_status from pages where company_slug = ?", (slug,))
-                 if status not in (404, 410) and companies.owns(entry, url)}
+                 if status not in (404, 410) and companies.owns(entry, url) and not excluded.search(url)
+                 and not discover.ASSET.search(urlparse(url).path) and url == url.strip()}
         if known - set(urls):
             added = len(known - set(urls))
             print(f"{entry['company']:<14} +{added} known pages not in this week's sitemap", flush=True)
