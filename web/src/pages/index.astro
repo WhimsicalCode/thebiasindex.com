@@ -17,7 +17,7 @@ import {
   scoredCompanies,
 } from "@/lib/db"
 import { href } from "@/lib/deploy"
-import { fmt, perPage, redFlags } from "@/lib/format"
+import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
 import { siteDataset } from "@/lib/schema"
 import { REPO_URL, WHY_URL } from "@/lib/site"
 
@@ -29,6 +29,11 @@ const example = examplePage(all)
 const run = latestRun()
 const totalPages = all.reduce((sum, c) => sum + c.scoredPages, 0)
 const totalFlags = all.reduce((sum, c) => sum + c.biasLoad, 0)
+const facts = [
+  { value: fmt(all.length), label: "Companies" },
+  { value: fmt(totalPages), label: "Compare pages" },
+  { value: fmt(totalFlags), label: "Red flags" },
+]
 const urlOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "")
 
 // For the lookup: every domain a company is known by, pointing at its page.
@@ -104,9 +109,14 @@ const domains = Object.fromEntries(
       </div>
 
       <div class="facts">
-        <div class="fact"><b>{fmt(all.length)}</b><span>Companies</span></div>
-        <div class="fact"><b>{fmt(totalPages)}</b><span>Compare pages</span></div>
-        <div class="fact"><b>{fmt(totalFlags)}</b><span>Red flags</span></div>
+        {
+          facts.map(f => (
+            <div class="fact">
+              <b style={inkEnd(f.value, "Dinsical")}>{f.value}</b>
+              <span style={inkEnd(f.label, "Monsical")}>{f.label}</span>
+            </div>
+          ))
+        }
       </div>
     </section>
 
@@ -401,15 +411,19 @@ const domains = Object.fromEntries(
     gap: 6px;
   }
 
+  // Equal gaps between the three facts, the last one ending at the right edge, whatever the width of each number.
+  // Each fact is right-aligned; inkEnd() puts the last stroke of the number and of its label on the same line.
   .facts {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
     margin-top: 88px;
     border-top: 1px solid #1a1630;
   }
 
   .fact {
-    padding: 20px 24px 0 0;
+    padding-top: 20px;
+    text-align: right;
   }
 
   .fact b {
@@ -424,6 +438,7 @@ const domains = Object.fromEntries(
   .fact span {
     font-size: 13px;
     color: #5f5a72;
+    white-space: nowrap;
   }
 
   .section {
@@ -528,7 +543,7 @@ const domains = Object.fromEntries(
   }
 
   .r-total {
-    font-family: "Dinsical", system-ui, sans-serif;
+    font-family: "Monsical", ui-monospace, monospace;
     font-weight: 700;
     font-size: 20px;
     text-align: right;
@@ -665,7 +680,7 @@ const domains = Object.fromEntries(
     }
 
     .fact {
-      padding: 16px 12px 0 0;
+      padding-top: 16px;
     }
 
     .fact b {

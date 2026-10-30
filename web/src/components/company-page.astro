@@ -17,7 +17,7 @@ import {
   unrankedStatus,
 } from "@/lib/db"
 import { href } from "@/lib/deploy"
-import { fmt, perPage, redFlags } from "@/lib/format"
+import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
 import { standingOf, summaryOf, verdictOf } from "@/lib/report"
 import { companyDataset } from "@/lib/schema"
 import { REPO_URL } from "@/lib/site"
@@ -38,6 +38,11 @@ const shown = scored.slice(first, first + PAGE_SIZE)
 const pagePath = (n: number) =>
   href(n === 1 ? companyPath(company) : `${companyPath(company)}/${n}`)
 const ok = company.status === "ok"
+const facts = [
+  { value: ok ? fmt(company.biasLoad) : "–", label: "red flags in total" },
+  { value: perPage(company), label: "red flags per page" },
+  { value: ok ? fmt(company.scoredPages) : "–", label: "compare pages" },
+]
 
 // Where the company stands, and the verdict (shared with its JSON, llms.txt and the share image).
 const standing = standingOf(company)
@@ -96,17 +101,25 @@ const ANSWER = {
       </div>
 
       <div class="facts">
-        <div class="fact"><b>{ok ? fmt(company.biasLoad) : "–"}</b><span>red flags in total</span></div>
-        <div class="fact"><b>{perPage(company)}</b><span>red flags per page</span></div>
-        <div class="fact"><b>{ok ? fmt(company.scoredPages) : "–"}</b><span>compare pages</span></div>
+        {
+          facts.map(f => (
+            <div class="fact">
+              <b style={inkEnd(f.value, "Dinsical")}>{f.value}</b>
+              <span style={inkEnd(f.label, "Monsical")}>{f.label}</span>
+            </div>
+          ))
+        }
         {
           company.candidates > 0 ? (
             <a class="fact fact-link" href={href(`${companyPath(company)}/candidates`)}>
-              <b>{fmt(company.candidates)}</b>
-              <span>candidate pages →</span>
+              <b style={inkEnd(fmt(company.candidates), "Dinsical")}>{fmt(company.candidates)}</b>
+              <span style={inkEnd("candidate pages →", "Monsical")}>candidate pages →</span>
             </a>
           ) : (
-            <div class="fact"><b>{ok ? "0" : "–"}</b><span>candidate pages</span></div>
+            <div class="fact">
+              <b style={inkEnd(ok ? "0" : "–", "Dinsical")}>{ok ? "0" : "–"}</b>
+              <span style={inkEnd("candidate pages", "Monsical")}>candidate pages</span>
+            </div>
           )
         }
       </div>
@@ -332,15 +345,18 @@ const ANSWER = {
     max-width: 52ch;
   }
 
+  // As on the home page: equal gaps, the last fact ending at the right edge, each one right-aligned.
   .facts {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
     margin-top: 64px;
     border-top: 1px solid #1a1630;
   }
 
   .fact {
-    padding: 20px 24px 0 0;
+    padding-top: 20px;
+    text-align: right;
   }
 
   .fact b {
@@ -355,6 +371,7 @@ const ANSWER = {
   .fact span {
     font-size: 13px;
     color: #5f5a72;
+    white-space: nowrap;
   }
 
   .fact-link {
@@ -405,7 +422,7 @@ const ANSWER = {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-family: "Dinsical", system-ui, sans-serif;
+    font-family: "Monsical", ui-monospace, monospace;
     font-weight: 700;
     font-size: 22px;
   }
@@ -554,7 +571,7 @@ const ANSWER = {
   }
 
   .score {
-    font-family: "Dinsical", system-ui, sans-serif;
+    font-family: "Monsical", ui-monospace, monospace;
     font-weight: 700;
     font-size: 22px;
     text-align: right;
@@ -643,12 +660,14 @@ const ANSWER = {
     }
 
     .facts {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
       margin-top: 36px;
     }
 
     .fact {
-      padding: 16px 12px 16px 0;
+      padding: 16px 0 16px 12px;
       border-bottom: 1px solid #e6e3ec;
     }
 
