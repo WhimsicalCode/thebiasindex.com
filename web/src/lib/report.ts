@@ -114,6 +114,7 @@ export function reportOf(company: Company) {
     domain: company.slug,
     company: company.company,
     aliases: company.aliases,
+    category: company.category,
     url: absoluteUrl(companyPath(company)),
     summary: summaryOf(company),
     status: company.status,

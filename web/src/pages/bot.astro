@@ -36,7 +36,7 @@ import { CONTACT, REPO_URL } from "@/lib/site"
             <code>robots.txt</code> sets a <code>Crawl-delay</code>.
           </li>
           <li>
-            Stops for the week after three blocked responses in a row (403, 429 or 503) rather than retrying harder.
+            Gives each page at most 30 seconds, and stops for the week after three blocked (403, 429, 503) or timed-out pages in a row, rather than retrying harder.
           </li>
           <li>Doesn't run JavaScript, submit forms or log in, and never republishes your pages: it links to them.</li>
         </ul>

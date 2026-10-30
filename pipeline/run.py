@@ -52,6 +52,8 @@ create table if not exists companies (
     company text not null,
     hosts text not null,
     aliases text not null default '[]',
+    category text,
+    monitored integer not null default 1,
     product_names text not null,
     candidates integer not null default 0,
     sampled integer not null default 0,
@@ -138,7 +140,7 @@ def discover_all(entries):
     return {entry["company"]: result for entry, result in zip(entries, found)}
 
 
-def fetch_all(pages, raw_dir):
+def fetch_all(pages, raw_dir, reuse_since=None, budget_s=None):
     for sub in ("html", "text"):
         (raw_dir / sub).mkdir(parents=True, exist_ok=True)
     by_host = defaultdict(list)
@@ -146,8 +148,9 @@ def fetch_all(pages, raw_dir):
         by_host[urlparse(page["url"]).netloc].append(page)
     with httpx.Client(headers=fetch_pages.HEADERS, timeout=20, follow_redirects=True) as client, \
             ThreadPoolExecutor(min(32, max(1, len(by_host)))) as pool:
-        chunks = list(pool.map(lambda item: fetch_pages.fetch_host(client, item[0], item[1], str(raw_dir)),
-                               by_host.items()))
+        chunks = list(pool.map(
+            lambda item: fetch_pages.fetch_host(client, item[0], item[1], str(raw_dir), reuse_since, budget_s),
+            by_host.items()))
     return {result["page_id"]: result for chunk in chunks for result in chunk}
 
 
@@ -162,6 +165,11 @@ def main():
     parser.add_argument("--companies", default="", help="Comma-separated company names (default: all)")
     parser.add_argument("--max-pages-per-company", type=int, default=0)
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--host-budget-minutes", type=float, default=60,
+                        help="Most time spent fetching one site per run; pages left over keep their previous scores")
+    parser.add_argument("--reuse-fetched-since", default="",
+                        help="ISO time: reuse pages saved under --raw since then instead of fetching them again "
+                             "(to resume an interrupted run)")
     args = parser.parse_args()
 
     api_key = openai_api_key()
@@ -172,8 +180,17 @@ def main():
 
     db = sqlite3.connect(args.db)
     db.executescript(SCHEMA)
-    if "aliases" not in {row[1] for row in db.execute("pragma table_info(companies)")}:
+    columns = {row[1] for row in db.execute("pragma table_info(companies)")}
+    if "aliases" not in columns:
         db.execute("alter table companies add column aliases text not null default '[]'")
+    if "category" not in columns:
+        db.execute("alter table companies add column category text")
+    if "monitored" not in columns:
+        db.execute("alter table companies add column monitored integer not null default 1")
+    if not args.companies:
+        # Companies dropped from domains.yml leave the site; their pages stay in the database as history.
+        listed = [entry["domain"] for entry in entries]
+        db.execute(f"update companies set monitored = slug in ({','.join('?' * len(listed))})", listed)
     started = now()
     run_id = db.execute("insert into runs (started_at, methodology, model) values (?, ?, ?)",
                         (started, classify.METHODOLOGY_VERSION, classify.MODEL)).lastrowid
@@ -197,15 +214,15 @@ def main():
         sample = stable_sample(urls, args.max_pages_per_company)
         status = "no_sitemap" if sitemap_urls == 0 and not urls else "ok"
         db.execute(
-            """insert into companies (slug, company, hosts, aliases, product_names, candidates, sampled, status,
-                 updated_at)
-               values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """insert into companies (slug, company, hosts, aliases, category, product_names, candidates, sampled,
+                 status, updated_at)
+               values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                on conflict(slug) do update set company = excluded.company, hosts = excluded.hosts,
-                 aliases = excluded.aliases,
+                 aliases = excluded.aliases, category = excluded.category,
                  product_names = excluded.product_names, candidates = excluded.candidates,
                  sampled = excluded.sampled, status = excluded.status, updated_at = excluded.updated_at""",
             (slug, entry["company"], json.dumps(entry["hosts"]), json.dumps(entry.get("aliases", [])),
-             json.dumps(entry["product_names"]),
+             entry["category"], json.dumps(entry["product_names"]),
              len(urls), len(sample), status, started),
         )
         for url in sample:
@@ -216,7 +233,8 @@ def main():
 
     print(f"fetching {len(pages)} pages...", flush=True)
     fetch_started = time.monotonic()
-    fetched = fetch_all(pages, raw_dir)
+    reuse_since = datetime.fromisoformat(args.reuse_fetched_since).timestamp() if args.reuse_fetched_since else None
+    fetched = fetch_all(pages, raw_dir, reuse_since, args.host_budget_minutes * 60)
     print(f"fetched in {time.monotonic() - fetch_started:.0f}s", flush=True)
 
     # Hosts where every page was blocked: mark the company unreachable.
@@ -234,6 +252,14 @@ def main():
     for page in pages:
         result = fetched[page["page_id"]]
         slug, entry = company_for[page["page_id"]]
+        if result["error"] == fetch_pages.NOT_REACHED:
+            # Out of time for this site: a known page stays current with its previous data and score.
+            updated = db.execute("update pages set last_seen = ? where url = ?", (started, page["url"])).rowcount
+            if not updated:
+                db.execute("insert into pages (url, page_id, company_slug, first_seen, last_seen, skip_reason) "
+                           "values (?, ?, ?, ?, ?, ?)",
+                           (page["url"], page["page_id"], slug, started, started, "not checked yet"))
+            continue
         text_path = raw_dir / "text" / f"{page['page_id']}.md"
         text = text_path.read_text(encoding="utf-8") if text_path.exists() else ""
         text_hash = hashlib.sha1(text.encode()).hexdigest() if text else None

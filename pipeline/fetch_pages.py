@@ -8,9 +8,11 @@ Hosts are fetched in parallel, one request at a time per host, honoring robots.t
 """
 
 import csv
+import json
 import os
 import re
 import sys
+import threading
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -28,6 +30,44 @@ DELAY_S = 1.0
 BLOCKED_STATUSES = {403, 429, 503}
 MAX_CONSECUTIVE_BLOCKS = 3
 MAX_BYTES = 5_000_000
+# A whole page, headers to last byte. Some servers answer bots by trickling bytes, which never trips a read timeout.
+MAX_SECONDS = 30
+NOT_REACHED = "not reached this run (time budget for the site used up)"
+
+
+class TooSlow(httpx.TimeoutException):
+    """The page took longer than MAX_SECONDS in total."""
+
+
+def get_page(client, url):
+    """GET with a hard total time limit, from connecting to the last byte, and a size cap. The request runs in its
+    own thread so a server that stalls anywhere (even before sending headers) can't hold the crawl."""
+    outcome = {}
+
+    def fetch():
+        try:
+            with client.stream("GET", url) as response:
+                chunks, size = [], 0
+                for chunk in response.iter_bytes():
+                    chunks.append(chunk)
+                    size += len(chunk)
+                    if size >= MAX_BYTES or "late" in outcome:
+                        break
+                response._content = b"".join(chunks)[:MAX_BYTES]
+            outcome["response"] = response
+        except Exception as error:  # handed to the caller below
+            outcome["error"] = error
+
+    worker = threading.Thread(target=fetch, daemon=True)
+    worker.start()
+    worker.join(MAX_SECONDS)
+    if worker.is_alive():
+        outcome["late"] = True  # the thread stops at its next chunk; its connection is left to time out
+        raise TooSlow(f"no complete answer within {MAX_SECONDS}s")
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["response"]
+
 
 LANG = re.compile(r"<html[^>]*\blang=[\"']?([A-Za-z-]+)", re.IGNORECASE)
 CANONICAL = re.compile(r"<link[^>]+rel=[\"']?canonical[\"']?[^>]*>", re.IGNORECASE)
@@ -92,15 +132,45 @@ def robots_for(client, host):
     return parser
 
 
-def fetch_host(client, host, rows, out_dir):
+def reused(row, out_dir, since):
+    """The page as saved by an earlier fetch at or after `since` (epoch seconds), or None.
+    Each fetch writes <page_id>.json with its status and final URL; pages saved before that existed are taken as a
+    plain 200 at their own URL."""
+    html_path = os.path.join(out_dir, "html", f"{row['page_id']}.html")
+    text_path = os.path.join(out_dir, "text", f"{row['page_id']}.md")
+    if not since or not os.path.exists(html_path) or not os.path.exists(text_path):
+        return None
+    if os.path.getmtime(html_path) < since:
+        return None
+    meta_path = os.path.join(out_dir, "meta", f"{row['page_id']}.json")
+    meta = json.load(open(meta_path)) if os.path.exists(meta_path) else {"status": 200, "final_url": row["url"]}
+    with open(html_path, encoding="utf-8") as handle:
+        html = handle.read()
+    with open(text_path, encoding="utf-8") as handle:
+        text = handle.read()
+    return {"page_id": row["page_id"], "url": row["url"], "error": "", **page_metadata(html, meta["final_url"]),
+            "status": meta["status"], "final_url": meta["final_url"], "text_chars": len(text)}
+
+
+def fetch_host(client, host, rows, out_dir, reuse_since=None, budget_s=None):
     robots = robots_for(client, host)
     delay = max(DELAY_S, robots.crawl_delay(USER_AGENT) or 0)
-    results, blocked = [], 0
+    results, blocked, started = [], 0, time.monotonic()
     for row in rows:
         result = {"page_id": row["page_id"], "url": row["url"], "status": "", "final_url": "", "lang": "",
                   "canonical_url": "", "title": "", "text_chars": 0, "error": ""}
+        earlier = reused(row, out_dir, reuse_since)
+        if earlier:
+            results.append(earlier)
+            continue
         if blocked >= MAX_CONSECUTIVE_BLOCKS:
             result["error"] = "host blocked the crawler"
+            results.append(result)
+            continue
+        # A site's fetching time is capped per run (a Crawl-delay of 600 s would otherwise take hours). Pages left
+        # over keep their previous scores and are checked on a later run.
+        if budget_s and time.monotonic() - started + delay > budget_s:
+            result["error"] = NOT_REACHED
             results.append(result)
             continue
         if not robots.can_fetch(USER_AGENT, row["url"]):
@@ -109,22 +179,28 @@ def fetch_host(client, host, rows, out_dir):
             continue
         time.sleep(delay)
         try:
-            response = client.get(row["url"])
+            response = get_page(client, row["url"])
             if response.status_code in BLOCKED_STATUSES:
                 blocked += 1
                 result.update(status=response.status_code, error="blocked")
                 results.append(result)
                 continue
             blocked = 0
-            html = response.content[:MAX_BYTES].decode(response.encoding or "utf-8", errors="replace")
+            html = response.content.decode(response.encoding or "utf-8", errors="replace")
             text = extract_text(html)
             with open(os.path.join(out_dir, "html", f"{row['page_id']}.html"), "w", encoding="utf-8") as handle:
                 handle.write(html)
             with open(os.path.join(out_dir, "text", f"{row['page_id']}.md"), "w", encoding="utf-8") as handle:
                 handle.write(text)
+            os.makedirs(os.path.join(out_dir, "meta"), exist_ok=True)
+            with open(os.path.join(out_dir, "meta", f"{row['page_id']}.json"), "w", encoding="utf-8") as handle:
+                json.dump({"status": response.status_code, "final_url": str(response.url)}, handle)
             result.update(page_metadata(html, str(response.url)), status=response.status_code,
                           final_url=str(response.url), text_chars=len(text))
         except httpx.HTTPError as error:
+            # A host that stops answering counts like one that blocks: otherwise every page would cost a full timeout.
+            if isinstance(error, (httpx.TimeoutException, httpx.ConnectError)):
+                blocked += 1
             result["error"] = f"{type(error).__name__}: {error}"[:200]
         results.append(result)
     return results

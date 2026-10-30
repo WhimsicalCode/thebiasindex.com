@@ -35,11 +35,12 @@ def main():
     db = sqlite3.connect(args.db)
 
     write_csv(out / "companies.csv", db.execute(f"""
-        select c.slug as domain, c.company, c.status, c.candidates,
+        select c.slug as domain, c.company, c.category, c.status, c.candidates,
                count(p.url) filter (where p.page_type = 'competitor_comparison') as competitor_comparisons,
                coalesce(sum(p.score) filter (where p.page_type = 'competitor_comparison'), 0) as red_flags_total,
                round(avg(p.score) filter (where p.page_type = 'competitor_comparison'), 2) as red_flags_per_page
         from companies c left join pages p on p.company_slug = c.slug and {CURRENT}
+        where coalesce(c.monitored, 1) = 1
         group by c.slug order by red_flags_total desc, c.company"""))
 
     write_csv(out / "pages.csv", db.execute(f"""
@@ -55,7 +56,8 @@ def main():
         select count(distinct c.slug),
                count(p.url) filter (where p.page_type = 'competitor_comparison'),
                coalesce(sum(p.score) filter (where p.page_type = 'competitor_comparison'), 0)
-        from companies c left join pages p on p.company_slug = c.slug and {CURRENT}""").fetchone()
+        from companies c left join pages p on p.company_slug = c.slug and {CURRENT}
+        where coalesce(c.monitored, 1) = 1""").fetchone()
     (out / "release-notes.md").write_text(
         f"Weekly run of {run[0][:10]}, methodology {run[1]} ({run[2]}).\n\n"
         f"- {companies} companies monitored\n- {scored:,} competitor comparisons scored\n"

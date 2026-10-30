@@ -66,6 +66,8 @@ export type Company = {
   hosts: string[]
   /** Other domains people know it by (draw.io for drawio.com); /draw.io redirects to /drawio.com. */
   aliases: string[]
+  /** e.g. "project_management"; null for databases from before categories existed. */
+  category: string | null
   candidates: number
   sampled: number
   status: string
@@ -166,9 +168,17 @@ export function companies(): Company[] {
 }
 
 function queryCompanies(): Company[] {
+  // Databases from before categories (or the monitored flag) existed lack those columns.
+  const columns = (open().prepare("pragma table_info(companies)").all() as { name: string }[]).map(
+    column => column.name
+  )
+  const hasCategory = columns.includes("category")
+  // Companies dropped from domains.yml stay in the database as history, but not on the site.
+  const monitoredOnly = columns.includes("monitored") ? "where c.monitored = 1" : ""
   const rows = open()
     .prepare(
-      `select c.slug, c.company, c.hosts, c.aliases, c.candidates, c.sampled, c.status,
+      `select c.slug, c.company, c.hosts, c.aliases, ${hasCategory ? "c.category" : "null as category"},
+         c.candidates, c.sampled, c.status,
          sum(case when p.page_type = 'competitor_comparison' then 1 else 0 end) as scored,
          avg(case when p.page_type = 'competitor_comparison' then p.score end) as average_score,
          sum(case when p.page_type = 'competitor_comparison' then p.score else 0 end) as bias_load,
@@ -182,6 +192,7 @@ function queryCompanies(): Company[] {
          sum(case when p.skip_reason is not null then 1 else 0 end) as skipped
        from companies c
        left join pages p on p.company_slug = c.slug and ${currentPagesWhere().replaceAll("pages.", "p.")}
+       ${monitoredOnly}
        group by c.slug
        order by c.company collate nocase`
     )
@@ -194,6 +205,7 @@ function queryCompanies(): Company[] {
       company: String(row.company),
       hosts: JSON.parse(String(row.hosts)) as string[],
       aliases: JSON.parse(String(row.aliases ?? "[]")) as string[],
+      category: row.category ? String(row.category) : null,
       candidates: Number(row.candidates),
       sampled: Number(row.sampled),
       status: String(row.status),

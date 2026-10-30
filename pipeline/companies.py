@@ -5,6 +5,7 @@ key an LLM or a reader looks it up by. It is written by hand, never derived from
 stops if the file breaks one of these rules:
 
 - every company has a unique domain, and no alias or host belongs to two companies;
+- every company has a category from CATEGORIES;
 - the first host is the domain itself or one of its subdomains (www.notion.com for notion.com);
 - extra hosts on another domain (tldraw.dev for tldraw.com) must be listed explicitly under `hosts`.
 
@@ -21,6 +22,10 @@ import yaml
 
 PATH = Path(__file__).resolve().parent / "domains.yml"
 DOMAIN = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
+CATEGORIES = {"ai_research", "ai_tools", "automation", "crm", "design_prototyping", "developer_tools",
+              "diagramming_whiteboards", "docs_wikis_knowledge", "email_marketing", "forms_surveys", "help_desk",
+              "mind_mapping", "notes", "presentations", "product_analytics", "project_management", "scheduling",
+              "video", "website_builders"}
 
 
 def _within(host, domain):
@@ -40,6 +45,8 @@ def validate(entries):
         if not DOMAIN.match(domain) or domain.startswith("www."):
             problems.append(f"{name}: domain {domain!r} must be a bare lowercase domain like clickup.com")
             continue
+        if entry.get("category") not in CATEGORIES:
+            problems.append(f"{name}: category {entry.get('category')!r} must be one of {sorted(CATEGORIES)}")
         if not entry.get("hosts") or not _within(entry["hosts"][0], domain):
             problems.append(f"{name}: first host must be {domain} or a subdomain of it")
         for key in [domain, *entry.get("aliases", []), *entry.get("hosts", [])]:
