@@ -336,10 +336,17 @@ export function unrankedStatus(company: Company): string | null {
 /** This week's pages by what they turned out to be: page type, or "unreadable" when we couldn't read them. */
 export function pageTypeCounts(): Record<string, number> {
   return cached("pageTypes", () => {
+    // Only companies on the site, as in companies(), so the totals match the home page.
+    const columns = (
+      open().prepare("pragma table_info(companies)").all() as { name: string }[]
+    ).map(column => column.name)
+    const monitoredOnly = columns.includes("monitored")
+      ? "and company_slug in (select slug from companies where monitored = 1)"
+      : ""
     const rows = open()
       .prepare(
         `select coalesce(page_type, 'unreadable') as type, count(*) as n from pages
-         where ${currentPagesWhere()} group by 1`
+         where ${currentPagesWhere()} ${monitoredOnly} group by 1`
       )
       .all() as { type: string; n: number }[]
     return Object.fromEntries(rows.map(row => [row.type, Number(row.n)]))
