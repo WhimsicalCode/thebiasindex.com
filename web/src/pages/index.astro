@@ -13,6 +13,7 @@ import {
   examplePage,
   latestRun,
   longDate,
+  lookupCompanies,
   QUESTIONS,
   scoredCompanies,
 } from "@/lib/db"
@@ -35,18 +36,6 @@ const facts = [
   { value: fmt(totalFlags), label: "Red flags" },
 ]
 const urlOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "")
-
-// For the lookup: each company's name and every domain it is known by, pointing at its page.
-const lookup = all
-  .map(c => ({
-    name: c.company,
-    slug: c.slug,
-    domains: [
-      ...new Set([c.slug, ...c.aliases, ...c.hosts].map(domain => domain.replace(/^www\./, ""))),
-    ],
-    href: companyHref(c),
-  }))
-  .sort((a, b) => a.name.localeCompare(b.name))
 ---
 
 <BaseLayout
@@ -96,7 +85,7 @@ const lookup = all
           <form
             class="lookup"
             action={href("/companies")}
-            data-companies={JSON.stringify(lookup)}
+            data-companies={JSON.stringify(lookupCompanies())}
           >
             <label for="domain">Look up a company by its name or website</label>
             <div class="lookup-row">
@@ -232,53 +221,28 @@ const lookup = all
 </BaseLayout>
 
 <script>
+  import { domainOf, findCompanies, type LookupCompany } from "@/lib/lookup"
   import { addCompanyUrl, isDomain } from "@/lib/site"
 
-  // Look a company up by name or website as you type: "mir", "Miro" and "https://www.Miro.com/app" all suggest Miro,
-  // aliases included. When nothing matches, the only suggestion is to ask for the company in a GitHub issue.
-  type Company = { name: string; slug: string; domains: string[]; href: string }
-  type Option = { company: Company } | { add: string }
+  // Look a company up by name or website as you type (lib/lookup.ts). When nothing matches, the only suggestion is
+  // to ask for the company in a GitHub issue.
+  type Option = { company: LookupCompany } | { add: string }
 
   const MAX_OPTIONS = 8
   const form = document.querySelector<HTMLFormElement>("form.lookup")
   const input = form?.querySelector("input")
   const list = form?.querySelector<HTMLUListElement>(".lookup-list")
-  const companies: Company[] = JSON.parse(form?.dataset.companies ?? "[]")
+  const companies: LookupCompany[] = JSON.parse(form?.dataset.companies ?? "[]")
   let options: Option[] = []
   let active = 0
 
-  const domainOf = (text: string) =>
-    text
-      .trim()
-      .toLowerCase()
-      .replace(/^[a-z]+:\/\//, "")
-      .replace(/[/?#:].*$/, "")
-      .replace(/^www\./, "")
-      .replace(/\.$/, "")
-
-  // 0: the name or a domain starts with the query, or the query is on one of its domains (app.miro.com is Miro).
-  // 1: a word of the name starts with it. 2: the name or a domain contains it. null: no match.
-  function rank(company: Company, text: string, domain: string): number | null {
-    const name = company.name.toLowerCase()
-    const on = (d: string) => domain === d || domain.endsWith(`.${d}`)
-    if (name.startsWith(text) || company.domains.some(d => d.startsWith(domain) || on(d))) return 0
-    if (name.split(/[\s.-]+/).some(word => word.startsWith(text))) return 1
-    if (name.includes(text) || company.domains.some(d => d.includes(domain))) return 2
-    return null
-  }
-
   function matches(query: string): Option[] {
-    const text = query.trim().toLowerCase()
-    const domain = domainOf(query)
-    if (!text) return []
-    const found = companies
-      .map(company => ({ company, rank: rank(company, text, domain || text) }))
-      .filter((match): match is { company: Company; rank: number } => match.rank !== null)
-      .sort((a, b) => a.rank - b.rank)
-      .slice(0, MAX_OPTIONS)
+    if (!query.trim()) return []
+    const found = findCompanies(companies, query, MAX_OPTIONS)
     // Ask for "acme.io" when given "https://acme.io/pricing", and for a name as typed.
+    const domain = domainOf(query)
     const add = isDomain(domain) ? domain : query.trim()
-    return found.length ? found.map(({ company }) => ({ company })) : [{ add }]
+    return found.length ? found.map(company => ({ company })) : [{ add }]
   }
 
   function render() {

@@ -1,5 +1,6 @@
 ---
 import "@/styles/globals.scss"
+import CommandPalette from "@/components/command-palette.astro"
 import { absoluteUrl, href } from "@/lib/deploy"
 import { REPO_URL } from "@/lib/site"
 
@@ -86,6 +87,7 @@ const current = (link: { section?: Section }) =>
           The Bias Index
         </a>
         <nav class="nav" aria-label="Main">
+          <button class="nav-k" type="button" aria-label="Open the command palette" data-palette-open>⌘K</button>
           {links.map(link => <a href={link.href} aria-current={current(link)}>{link.label}</a>)}
         </nav>
         <button class="nav-menu" type="button" aria-expanded="false" aria-controls="menu" data-menu-button>
@@ -111,6 +113,8 @@ const current = (link: { section?: Section }) =>
           </nav>
         </div>
       </footer>
+
+      <CommandPalette />
     </div>
   </body>
 </html>

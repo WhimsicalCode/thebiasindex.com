@@ -4,6 +4,7 @@ import { existsSync, statSync } from "node:fs"
 import path from "node:path"
 import { DatabaseSync } from "node:sqlite"
 import { href } from "./deploy"
+import type { LookupCompany } from "./lookup"
 
 const RED_FLAG = 0.8
 const OK = 0.2
@@ -385,6 +386,20 @@ export function companyPath(company: Pick<Company, "slug">): string {
 /** A link to the company page, with the deployment's base path. */
 export function companyHref(company: Pick<Company, "slug">): string {
   return href(companyPath(company))
+}
+
+/** For the lookups (lib/lookup.ts): each company's name and every domain it is known by, pointing at its page. */
+export function lookupCompanies(): LookupCompany[] {
+  return companies()
+    .map(c => ({
+      name: c.company,
+      slug: c.slug,
+      domains: [
+        ...new Set([c.slug, ...c.aliases, ...c.hosts].map(domain => domain.replace(/^www\./, ""))),
+      ],
+      href: companyHref(c),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** Company pages used to live at /companies/<name>; links shared before the move still work. */

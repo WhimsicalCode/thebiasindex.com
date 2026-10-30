@@ -1,0 +1,287 @@
+---
+// The command palette, on every page, opened with ⌘K (Ctrl+K elsewhere): go to a page, open GitHub, download the
+// data, or find a company by name or website (lib/lookup.ts). A company we don't track yet can be asked for on GitHub.
+import { lookupCompanies } from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { REPO_URL } from "@/lib/site"
+
+type Command = { label: string; href: string; external?: boolean; keywords?: string[] }
+
+const commands: Command[] = [
+  { label: "Navigate to Home", href: href("/"), keywords: ["index", "start"] },
+  { label: "Navigate to Companies", href: href("/companies"), keywords: ["ranking", "list"] },
+  { label: "Navigate to Methodology", href: href("/methodology"), keywords: ["how it works"] },
+  { label: "Navigate to About", href: href("/about") },
+  { label: "Open GitHub", href: REPO_URL, external: true, keywords: ["code", "source", "repo"] },
+  {
+    label: "Download the data",
+    href: `${REPO_URL}/releases/latest`,
+    external: true,
+    keywords: ["sqlite", "csv", "json", "release"],
+  },
+]
+---
+
+<dialog
+  class="palette"
+  aria-label="Command palette"
+  data-commands={JSON.stringify(commands)}
+  data-companies={JSON.stringify(lookupCompanies())}
+>
+  <input
+    type="text"
+    placeholder="Type a command or a company…"
+    aria-label="Type a command or a company"
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded="true"
+    aria-controls="palette-list"
+    autocomplete="off"
+    autocapitalize="none"
+    spellcheck="false"
+  />
+  <ul class="palette-list" id="palette-list" role="listbox" aria-label="Commands"></ul>
+  <p class="palette-keys" aria-hidden="true">
+    <span><kbd>↑</kbd><kbd>↓</kbd> to move</span>
+    <span><kbd>↵</kbd> to open</span>
+    <span><kbd>esc</kbd> to close</span>
+  </p>
+</dialog>
+
+<script>
+  import { domainOf, findCompanies, type LookupCompany } from "@/lib/lookup"
+  import { addCompanyUrl, isDomain } from "@/lib/site"
+
+  // Nothing typed: every command. Typed: the commands and companies that match, or asking for the company on GitHub.
+  type Command = { label: string; href: string; external?: boolean; keywords?: string[] }
+  type Option = { label: string; side: string; href: string; external?: boolean }
+
+  const MAX_COMPANIES = 8
+  const dialog = document.querySelector<HTMLDialogElement>("dialog.palette")
+  const input = dialog?.querySelector("input")
+  const list = dialog?.querySelector<HTMLUListElement>(".palette-list")
+  const commands: Command[] = JSON.parse(dialog?.dataset.commands ?? "[]")
+  const companies: LookupCompany[] = JSON.parse(dialog?.dataset.companies ?? "[]")
+  let options: Option[] = []
+  let active = 0
+
+  const arrow = (external?: boolean) => (external ? "↗" : "→")
+
+  // A command matches when one of its words, or a keyword's, starts with what was typed ("down", "git", "how").
+  function commandMatches(command: Command, text: string): boolean {
+    const words = [command.label, ...(command.keywords ?? [])].join(" ").toLowerCase()
+    return words.startsWith(text) || words.includes(` ${text}`)
+  }
+
+  function matches(query: string): Option[] {
+    const text = query.trim().toLowerCase()
+    const found: Option[] = [
+      ...commands
+        .filter(command => !text || commandMatches(command, text))
+        .map(command => ({ ...command, side: arrow(command.external) })),
+      ...findCompanies(companies, query, MAX_COMPANIES).map(company => ({
+        label: `Navigate to ${company.name}`,
+        side: `${company.slug} →`,
+        href: company.href,
+      })),
+    ]
+    if (found.length) return found
+    // Ask for "acme.io" when given "https://acme.io/pricing", and for a name as typed.
+    const domain = domainOf(query)
+    const add = isDomain(domain) ? domain : query.trim()
+    return [{ label: `Add company “${add}”`, side: "Ask on GitHub ↗", href: addCompanyUrl(add), external: true }]
+  }
+
+  function render() {
+    if (!input || !list) return
+    list.replaceChildren(
+      ...options.map((option, i) => {
+        const item = document.createElement("li")
+        item.id = `palette-option-${i}`
+        item.setAttribute("role", "option")
+        item.setAttribute("aria-selected", String(i === active))
+        const main = document.createElement("span")
+        main.textContent = option.label
+        const side = document.createElement("span")
+        side.className = "palette-side"
+        side.textContent = option.side
+        item.append(main, side)
+        // Keep the focus in the input.
+        item.addEventListener("mousedown", event => event.preventDefault())
+        item.addEventListener("mousemove", () => {
+          if (active !== i) move(i)
+        })
+        item.addEventListener("click", () => choose(option))
+        return item
+      })
+    )
+    input.setAttribute("aria-activedescendant", `palette-option-${active}`)
+  }
+
+  function move(to: number) {
+    active = (to + options.length) % options.length
+    render()
+    list?.children[active]?.scrollIntoView({ block: "nearest" })
+  }
+
+  function update() {
+    options = matches(input?.value ?? "")
+    active = 0
+    render()
+  }
+
+  function open() {
+    if (!dialog || !input || dialog.open) return
+    input.value = ""
+    update()
+    dialog.showModal()
+    input.focus()
+  }
+
+  function choose(option: Option | undefined) {
+    if (!option) return
+    if (option.external) {
+      window.open(option.href, "_blank", "noopener")
+      dialog?.close()
+    } else {
+      location.href = option.href
+    }
+  }
+
+  document.addEventListener("keydown", event => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault()
+      if (dialog?.open) dialog.close()
+      else open()
+    }
+  })
+  // The ⌘K button in the header; it reads Ctrl K where the shortcut is Ctrl+K.
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-palette-open]")) {
+    if (!/Mac|iPhone|iPad/.test(navigator.platform)) button.textContent = "Ctrl K"
+    button.addEventListener("click", open)
+  }
+  input?.addEventListener("input", update)
+  input?.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault()
+      move(active + (event.key === "ArrowDown" ? 1 : -1))
+    } else if (event.key === "Enter" && !event.isComposing) {
+      event.preventDefault()
+      choose(options[active])
+    }
+  })
+  // A click outside the box (on the backdrop) closes it. Escape closes it too, as any modal dialog.
+  dialog?.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close()
+  })
+</script>
+
+<style lang="scss" is:global>
+  // Not in the mockups: the home page's lookup suggestions, in a box at the top of the window.
+  // The page doesn't scroll behind the palette; its scrollbar's room stays, so nothing moves sideways.
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html:has(.palette[open]) {
+    overflow: hidden;
+  }
+
+  .palette {
+    width: min(600px, calc(100vw - 32px));
+    max-height: min(520px, calc(100dvh - 32px));
+    margin: 14vh auto auto;
+    padding: 0;
+    border: 1.5px solid #1a1630;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 16px 48px rgba(26, 22, 48, 0.2);
+    color: #1a1630;
+    overflow: hidden;
+
+    &[open] {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &::backdrop {
+      background: rgba(26, 22, 48, 0.32);
+    }
+
+    input {
+      flex: none;
+      height: 56px;
+      padding: 0 18px;
+      border: 0;
+      border-bottom: 1px solid #e6e3ec;
+      outline: none;
+      font: inherit;
+      font-size: 16px;
+      color: #1a1630;
+      background: #fff;
+    }
+  }
+
+  .palette-list {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    overflow-y: auto;
+  }
+
+  .palette-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .palette-list li[aria-selected="true"] {
+    background: #f4f2f8;
+  }
+
+  .palette-side {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .palette-keys {
+    display: flex;
+    gap: 18px;
+    margin: 0;
+    padding: 10px 18px;
+    border-top: 1px solid #e6e3ec;
+    font-size: 12px;
+    color: #5f5a72;
+
+    kbd {
+      margin-right: 3px;
+      padding: 0 5px;
+      border: 1px solid #e6e3ec;
+      border-radius: 4px;
+      font: inherit;
+    }
+  }
+
+  // The dialog sits above the page, outside its container.
+  @media (max-width: 760px) {
+    .palette {
+      margin-top: 16px;
+    }
+
+    .palette-keys {
+      display: none;
+    }
+  }
+</style>
