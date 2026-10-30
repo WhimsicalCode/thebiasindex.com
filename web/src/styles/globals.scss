@@ -70,6 +70,26 @@ a:hover {
   color: #5f5a72;
 }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 22px;
+  border-radius: 10px;
+  border: 0;
+  background: #1a1630;
+  color: #fff;
+  font-family: "Dinsical", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.btn:hover {
+  color: #fff;
+}
+
 // Header
 .top {
   display: flex;

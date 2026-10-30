@@ -9,6 +9,7 @@ import { byRedFlags, type Company, companies, companyHref, unrankedStatus } from
 import { href } from "@/lib/deploy"
 import { fmt, perPage } from "@/lib/format"
 import { inListOrder } from "@/lib/report"
+import { addCompanyUrl } from "@/lib/site"
 
 const all = companies()
 const scale = byRedFlags(all)[0]?.biasLoad ?? 1
@@ -102,18 +103,22 @@ const SORTS = [
         }
       </ol>
       <p class="empty" hidden></p>
+      <a class="btn submit" href={addCompanyUrl()} target="_blank" rel="noopener">Submit a new company</a>
     </section>
 
   </main>
 </BaseLayout>
 
 <script>
+  import { addCompanyUrl, isDomain } from "@/lib/site"
+
   // Sort by total, per page or compare pages, and filter by name or website (?q= from the home page's lookup).
   const list = document.querySelector<HTMLOListElement>("ol.rank")
   const rows = [...(list?.querySelectorAll<HTMLLIElement>("li") ?? [])]
   const chips = document.querySelectorAll<HTMLButtonElement>("[data-sort]")
   const find = document.querySelector<HTMLInputElement>("#find")
   const empty = document.querySelector<HTMLElement>(".empty")
+  const submit = document.querySelector<HTMLAnchorElement>(".submit")
   const value = (row: HTMLLIElement, key: string) => Number(row.dataset[key])
   const ORDER: Record<string, (a: HTMLLIElement, b: HTMLLIElement) => number> = {
     total: (a, b) => value(b, "total") - value(a, "total") || value(b, "pages") - value(a, "pages"),
@@ -141,6 +146,12 @@ const SORTS = [
     if (empty) {
       empty.hidden = ordered.some(row => !row.hidden)
       empty.textContent = `No company matches “${query}”.`
+    }
+    // Nothing matches: the new issue asks for what was typed, "acme.io" for "https://acme.io/pricing".
+    if (submit) {
+      const typed = (find?.value ?? "").trim()
+      const domain = typed.toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/[/?#:].*$/, "").replace(/^www\./, "")
+      submit.href = addCompanyUrl(empty?.hidden !== false ? "" : isDomain(domain) ? domain : typed)
     }
   }
 
@@ -363,6 +374,10 @@ const SORTS = [
   .empty {
     margin: 28px 0 0;
     color: #5f5a72;
+  }
+
+  .submit {
+    margin-top: 40px;
   }
 
   @container page (max-width: 760px) {

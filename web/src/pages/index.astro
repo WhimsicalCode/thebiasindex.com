@@ -97,7 +97,6 @@ const lookup = all
             class="lookup"
             action={href("/companies")}
             data-companies={JSON.stringify(lookup)}
-            data-repo={REPO_URL}
           >
             <label for="domain">Look up a company by its name or website</label>
             <div class="lookup-row">
@@ -233,6 +232,8 @@ const lookup = all
 </BaseLayout>
 
 <script>
+  import { addCompanyUrl, isDomain } from "@/lib/site"
+
   // Look a company up by name or website as you type: "mir", "Miro" and "https://www.Miro.com/app" all suggest Miro,
   // aliases included. When nothing matches, the only suggestion is to ask for the company in a GitHub issue.
   type Company = { name: string; slug: string; domains: string[]; href: string }
@@ -278,18 +279,6 @@ const lookup = all
     // Ask for "acme.io" when given "https://acme.io/pricing", and for a name as typed.
     const add = isDomain(domain) ? domain : query.trim()
     return found.length ? found.map(({ company }) => ({ company })) : [{ add }]
-  }
-
-  const isDomain = (text: string) => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(text)
-
-  // A prefilled issue: GitHub fills the new issue form from ?title= and ?body=.
-  function issueUrl(what: string): string {
-    // The pipeline finds the comparison pages; all it needs is the website.
-    const body = isDomain(what)
-      ? `Please add https://${what} to The Bias Index.`
-      : `Please add **${what}** to The Bias Index.\n\nWebsite: `
-    const params = new URLSearchParams({ title: `Add ${what}`, body })
-    return `${form?.dataset.repo}/issues/new?${params}`
   }
 
   function render() {
@@ -344,7 +333,7 @@ const lookup = all
       location.href = option.company.href
       return
     }
-    window.open(issueUrl(option.add), "_blank", "noopener")
+    window.open(addCompanyUrl(option.add), "_blank", "noopener")
     close()
   }
 
@@ -488,19 +477,6 @@ const lookup = all
     text-overflow: ellipsis;
     font-size: 13px;
     color: #5f5a72;
-  }
-
-  .btn {
-    height: 52px;
-    padding: 0 22px;
-    border-radius: 10px;
-    border: 0;
-    background: #1a1630;
-    color: #fff;
-    font-family: "Dinsical", system-ui, sans-serif;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
   }
 
   .hero-right {
