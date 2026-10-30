@@ -127,7 +127,13 @@ def page_metadata(html, url):
 
 
 def clean(fragment):
-    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", fragment))).strip()
+    text = re.sub(r"<[^>]+>", " ", fragment)
+    # Some sites encode titles twice (ClickUp's "&amp;amp;"), so decode until nothing changes.
+    for _ in range(3):
+        if (decoded := unescape(text)) == text:
+            break
+        text = decoded
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def page_title(html):
