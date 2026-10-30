@@ -1,0 +1,719 @@
+---
+// Company page at /<domain> (design/v2/mockups/Company.dc.html), so anyone, an LLM included, can look a company up
+// by its domain. Scored pages are listed 100 at a time: /clickup.com, then /clickup.com/2, /clickup.com/3…
+import FlagSplit from "@/components/flag-split.astro"
+import ScatterChart from "@/components/scatter-chart.astro"
+import BaseLayout from "@/layouts/base-layout.astro"
+import {
+  type Company,
+  companies,
+  companyPath,
+  latestRun,
+  longDate,
+  type Page,
+  pagesFor,
+  QUESTIONS,
+  scoredCompanies,
+  unrankedStatus,
+} from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { fmt, perPage, redFlags } from "@/lib/format"
+import { standingOf, summaryOf, verdictOf } from "@/lib/report"
+import { companyDataset } from "@/lib/schema"
+import { REPO_URL } from "@/lib/site"
+
+export const PAGE_SIZE = 100
+// Rows shown before "Show all", as in the mockup.
+const SHOWN = 25
+
+type Props = { company: Company; page: number }
+const { company, page } = Astro.props
+const name = company.company
+const all = companies()
+const run = latestRun()
+const scored = pagesFor(company.slug).filter(p => p.pageType === "competitor_comparison")
+const pageCount = Math.max(1, Math.ceil(scored.length / PAGE_SIZE))
+const first = (page - 1) * PAGE_SIZE
+const shown = scored.slice(first, first + PAGE_SIZE)
+const pagePath = (n: number) =>
+  href(n === 1 ? companyPath(company) : `${companyPath(company)}/${n}`)
+const ok = company.status === "ok"
+
+// Where the company stands, and the verdict (shared with its JSON, llms.txt and the share image).
+const standing = standingOf(company)
+const { headline: big, found, total } = verdictOf(company)
+
+// The pages on this list, by number of red flags, for the filter.
+const counts = [5, 4, 3, 2, 1, 0].map(n => ({ n, count: shown.filter(p => p.score === n).length }))
+const allLabel =
+  pageCount > 1 ? `${fmt(first + 1)}–${fmt(first + shown.length)}` : `All ${fmt(shown.length)}`
+const urlOf = (p: Page) => p.url.replace(/^https?:\/\/(www\.)?/, "")
+const summary = (p: Page) => {
+  const yes = QUESTIONS.filter((_, i) => p.answers[i] === "flag").map(q => q.label.toLowerCase())
+  return `${p.score ?? 0} of 5 red flags${yes.length ? `: ${yes.join(", ")}` : ""}`
+}
+const DATA_URL = `${REPO_URL}/releases/latest/download`
+// The title carries the verdict, for search results and links quoted by LLMs.
+const title =
+  page > 1
+    ? `${name}, pages ${fmt(first + 1)}–${fmt(first + shown.length)} · The Bias Index`
+    : company.status === "ok" && company.scoredPages > 0
+      ? `${name}: ${perPage(company)} red flags per comparison page · The Bias Index`
+      : `${name}: ${unrankedStatus(company)} · The Bias Index`
+const ANSWER = {
+  flag: "Red flag",
+  ok: "Pass: not a red flag",
+  unclear: "Unclear, not counted",
+} as const
+---
+
+<BaseLayout
+  title={title}
+  description={summaryOf(company)}
+  image={`/og/${company.slug}.png`}
+  section="companies"
+  alternates={[{ href: href(`/${company.slug}.json`), type: "application/json", title: `${name}, as JSON` }]}
+  jsonLd={page === 1 ? companyDataset(company) : undefined}
+>
+  <main>
+    <section class="wrap">
+      <a class="back" href={href("/companies")}>← Every company</a>
+      <div class="title">
+        <h1 class="display h1">{name}</h1>
+        <ul class="meta">
+          <li><a href={`https://${company.slug}`}>{company.slug}</a></li>
+          <li class="muted">{standing}</li>
+          {run && <li class="muted">Read on {longDate(run.startedAt)}</li>}
+        </ul>
+      </div>
+
+      <div class="verdict">
+        <p class="big">{big}</p>
+        <div>
+          <p>{found}</p>
+          {total && <p class="muted">{total}</p>}
+        </div>
+      </div>
+
+      <div class="facts">
+        <div class="fact"><b>{ok ? fmt(company.biasLoad) : "–"}</b><span>red flags in total</span></div>
+        <div class="fact"><b>{perPage(company)}</b><span>red flags per page</span></div>
+        <div class="fact"><b>{ok ? fmt(company.scoredPages) : "–"}</b><span>pages read</span></div>
+        <div class="fact"><b>{ok || company.candidates > 0 ? fmt(company.candidates) : "–"}</b><span>pages found</span></div>
+      </div>
+
+      {company.biasLoad > 0 && <FlagSplit company={company} />}
+    </section>
+
+    {
+      company.scoredPages > 0 && (
+        <section class="wrap section">
+          <div class="section-head">
+            <h2 class="display h2">{name} against everyone</h2>
+            <p class="muted">
+              Left to right: red flags per page. Bottom to top: pages read, on a log scale. Bigger dots have more red
+              flags in total. Every grey dot is another company.
+            </p>
+          </div>
+          <ScatterChart companies={scoredCompanies(all)} highlight={company} />
+        </section>
+      )
+    }
+
+    {
+      shown.length > 0 && (
+        <section class="wrap section" data-pages>
+          <div class="section-head">
+            <h2 class="display h2">All {fmt(scored.length)} pages</h2>
+            <p class="muted">A filled dot is a red flag. Open a page to read it yourself.</p>
+          </div>
+          <div class="chips" role="group" aria-label="Show pages by number of red flags">
+            <button class="chip on" type="button" aria-pressed="true" data-flags="all">
+              {allLabel}
+            </button>
+            {counts
+              .filter(({ count }) => count > 0)
+              .map(({ n, count }) => (
+                <button class="chip" type="button" aria-pressed="false" data-flags={n}>
+                  {redFlags(n)} · {fmt(count)}
+                </button>
+              ))}
+          </div>
+          <div class="rows-head" aria-hidden="true">
+            <span>Page</span>
+            <span>Answers, 1 to 5</span>
+            <span style="text-align: right">Flags</span>
+          </div>
+          {shown.map((p, i) => (
+            <div class="row" data-score={p.score} hidden={i >= SHOWN}>
+              <div class="row-main">
+                <a class="row-title" href={p.url} rel="nofollow noopener">
+                  {p.title || urlOf(p)}
+                </a>
+                <div class="row-url">{urlOf(p)}</div>
+              </div>
+              <div class="ans" role="img" aria-label={summary(p)}>
+                {p.answers.map((answer, q) => (
+                  <i
+                    class:list={["a", { [`y${q + 1}`]: answer === "flag" }]}
+                    data-label={QUESTIONS[q].label}
+                    data-value={ANSWER[answer]}
+                    data-question={QUESTIONS[q].question}
+                    data-color={QUESTIONS[q].color}
+                  />
+                ))}
+              </div>
+              <span class="score">{p.score}</span>
+            </div>
+          ))}
+          {shown.length > SHOWN && (
+            <button class="show" type="button" data-show>
+              Show all {fmt(shown.length)} pages
+            </button>
+          )}
+          <noscript>
+            <style>
+              .row[hidden] {
+                display: grid !important;
+              }
+              [data-show] {
+                display: none;
+              }
+            </style>
+          </noscript>
+          {pageCount > 1 && (
+            <nav class="pager" aria-label="More pages">
+              {page > 1 && <a href={pagePath(page - 1)}>← Previous {PAGE_SIZE}</a>}
+              <span class="muted">
+                Pages {fmt(first + 1)}–{fmt(first + shown.length)} of {fmt(scored.length)}, most red flags first
+              </span>
+              {page < pageCount && <a href={pagePath(page + 1)}>Next {Math.min(PAGE_SIZE, scored.length - first - PAGE_SIZE)} →</a>}
+            </nav>
+          )}
+        </section>
+      )
+    }
+
+    <section class="wrap section">
+      <div class="take">
+        <div>
+          <h3>Take the data with you</h3>
+          <p class="muted">
+            {
+              company.scoredPages > 0
+                ? `Every page we read for ${name}, with its five answers, as JSON.`
+                : `What we know about ${name}, as JSON.`
+            }{" "}
+            The whole index is in the weekly release.
+          </p>
+          <div class="take-links">
+            <a href={href(`/${company.slug}.json`)}>{company.slug}.json</a>
+            <a href={`${DATA_URL}/pages.csv`}>pages.csv</a>
+            <a href={`${DATA_URL}/companies.csv`}>companies.csv</a>
+          </div>
+        </div>
+        <div>
+          <h3>Think we got one wrong?</h3>
+          <p class="muted">
+            Open an issue on GitHub with the page and the question. The labelled pages we test against are public.
+          </p>
+          <div class="take-links">
+            <a href={`${REPO_URL}/issues/new`}>Open an issue</a>
+            <a href={href("/methodology")}>How the scoring works</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/lib/segment-tip"
+
+  // Filter the pages by number of red flags; the first 25 show until "Show all".
+  document.querySelectorAll<HTMLElement>("[data-pages]").forEach(section => {
+    const rows = [...section.querySelectorAll<HTMLElement>(".row")]
+    const chips = section.querySelectorAll<HTMLButtonElement>("[data-flags]")
+    const show = section.querySelector<HTMLButtonElement>("[data-show]")
+    let flags = "all"
+    let expanded = false
+
+    function render() {
+      const matching = rows.filter(row => flags === "all" || row.dataset.score === flags)
+      rows.forEach(row => {
+        row.hidden = true
+      })
+      matching.forEach((row, i) => {
+        row.hidden = !expanded && i >= 25
+      })
+      if (show) {
+        show.hidden = expanded || matching.length <= 25
+        show.textContent = `Show all ${matching.length.toLocaleString("en-US")} pages`
+      }
+    }
+
+    chips.forEach(chip =>
+      chip.addEventListener("click", () => {
+        flags = chip.dataset.flags ?? "all"
+        expanded = false
+        chips.forEach(other => {
+          other.classList.toggle("on", other === chip)
+          other.setAttribute("aria-pressed", String(other === chip))
+        })
+        render()
+      })
+    )
+    show?.addEventListener("click", () => {
+      expanded = true
+      render()
+    })
+  })
+</script>
+
+<style lang="scss" is:global>
+  .back {
+    display: inline-block;
+    margin-top: 32px;
+    font-size: 14px;
+  }
+
+  .title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 48px;
+    align-items: end;
+    margin-top: 20px;
+  }
+
+  .h1 {
+    font-size: 152px;
+    line-height: 0.9;
+    margin: 0;
+    letter-spacing: -0.04em;
+  }
+
+  .meta {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: 14px;
+    text-align: right;
+  }
+
+  .verdict {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 72px;
+    margin-top: 56px;
+    align-items: start;
+  }
+
+  .big {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .verdict p {
+    margin: 0 0 16px;
+    max-width: 52ch;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 64px;
+    border-top: 1px solid #1a1630;
+  }
+
+  .fact {
+    padding: 20px 24px 0 0;
+  }
+
+  .fact b {
+    display: block;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 48px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .fact span {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .split {
+    margin-top: 56px;
+  }
+
+  .split-bar {
+    display: flex;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .split-bar i {
+    display: block;
+    height: 100%;
+  }
+
+  .split-key {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .split-key span {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .split-key b {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: block;
+    flex: none;
+  }
+
+  .section {
+    padding-top: 128px;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: end;
+    margin-bottom: 40px;
+  }
+
+  .h2 {
+    font-size: 48px;
+    line-height: 1;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .section-head p {
+    margin: 0;
+    max-width: 54ch;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid #d9d6e0;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: #1a1630;
+  }
+
+  .chip.on {
+    background: #1a1630;
+    color: #fff;
+    border-color: #1a1630;
+  }
+
+  .rows-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px 60px;
+    gap: 24px;
+    margin-top: 28px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1630;
+    font-size: 12px;
+    color: #5f5a72;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px 60px;
+    gap: 24px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e6e3ec;
+  }
+
+  .row[hidden] {
+    display: none;
+  }
+
+  .row-title {
+    font-size: 15px;
+    line-height: 1.4;
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .row-title:hover {
+    text-decoration: underline;
+  }
+
+  .row-url {
+    font-size: 12px;
+    color: #5f5a72;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ans {
+    display: flex;
+    gap: 10px;
+  }
+
+  .a {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    display: block;
+    border: 1.5px solid #d4d0dc;
+    background: #fff;
+  }
+
+  .a.y1 {
+    background: #e9631c;
+    border-color: #e9631c;
+  }
+
+  .a.y2 {
+    background: #2d63e0;
+    border-color: #2d63e0;
+  }
+
+  .a.y3 {
+    background: #12a06a;
+    border-color: #12a06a;
+  }
+
+  .a.y4 {
+    background: #3b1e6e;
+    border-color: #3b1e6e;
+  }
+
+  .a.y5 {
+    background: #ec3e7b;
+    border-color: #ec3e7b;
+  }
+
+  .score {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    text-align: right;
+  }
+
+  .show {
+    margin-top: 28px;
+    height: 52px;
+    padding: 0 24px;
+    border-radius: 10px;
+    border: 1.5px solid #1a1630;
+    background: #fff;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  // Pages 101 and up are on /<domain>/2, /3… (not in the mockup).
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 28px;
+    margin-top: 28px;
+    font-size: 14px;
+  }
+
+  .take {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    padding-top: 28px;
+    border-top: 1px solid #1a1630;
+  }
+
+  .take h3 {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: -0.015em;
+    margin: 0 0 8px;
+  }
+
+  .take p {
+    margin: 0;
+    max-width: 50ch;
+  }
+
+  .take-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    margin-top: 16px;
+  }
+
+  @container page (max-width: 760px) {
+    .back {
+      margin-top: 12px;
+    }
+
+    .title {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .h1 {
+      font-size: 80px;
+    }
+
+    .meta {
+      text-align: left;
+      margin: 0;
+    }
+
+    .verdict {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .big {
+      font-size: 28px;
+    }
+
+    .facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 36px;
+    }
+
+    .fact {
+      padding: 16px 12px 16px 0;
+      border-bottom: 1px solid #e6e3ec;
+    }
+
+    .fact b {
+      font-size: 34px;
+    }
+
+    .split {
+      margin-top: 36px;
+    }
+
+    .split-bar {
+      height: 28px;
+    }
+
+    .split-key {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .split-key span {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .split-key b {
+      font-size: 18px;
+      min-width: 56px;
+    }
+
+    .section {
+      padding-top: 80px;
+    }
+
+    .section-head {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .h2 {
+      font-size: 34px;
+    }
+
+    .chip {
+      padding: 0 14px;
+      font-size: 13px;
+    }
+
+    .rows-head {
+      display: none;
+    }
+
+    .row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 16px;
+      padding: 16px 0;
+    }
+
+    .row-main {
+      grid-column: 1 / -1;
+    }
+
+    .row-url {
+      white-space: normal;
+      word-break: break-all;
+    }
+
+    .a {
+      width: 16px;
+      height: 16px;
+    }
+
+    // Pages 101 and up are on /<domain>/2, /3… (not in the mockup).
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 28px;
+    margin-top: 28px;
+    font-size: 14px;
+  }
+
+  .take {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+    }
+  }
+</style>

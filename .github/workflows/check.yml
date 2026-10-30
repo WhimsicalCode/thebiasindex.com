@@ -1,0 +1,54 @@
+name: Check
+
+# Runs on every push, like the Whimsical website's check. Deploys are not done here: Cloudflare Pages builds and
+# deploys `main` (and previews for other branches) through its Git integration. See README, "Hosting".
+on: [push]
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get the latest data release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: .
+        run: |
+          mkdir -p data
+          gh release download --pattern bias_index.sqlite --dir data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Biome and astro check
+        run: npm run check-all
+
+      - name: Build
+        run: npm run build
+
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Ruff
+        run: uvx ruff@0.17.3 check pipeline
+
+      - name: Validate pipeline/domains.yml
+        run: uv run python -c "import sys; sys.path.insert(0, 'pipeline'); import companies; print(len(companies.load()), 'companies')"
+
+      - name: Reproduce the published benchmark table (no API calls)
+        run: uv run pipeline/consolidated.py

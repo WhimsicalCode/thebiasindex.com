@@ -1,0 +1,59 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { href } from "@/lib/deploy"
+import { REPO_URL, WHY_URL } from "@/lib/site"
+---
+
+<BaseLayout
+  title="About · The Bias Index"
+  description="A comparison page should help you choose, even when the right choice is the other tool. Most don't."
+  section="about"
+>
+  <main>
+    <section class="wrap">
+      <div class="doc-title">
+        <h1 class="display h1">About</h1>
+        <p>A comparison page should help you choose, even when the right choice is the other tool. Most don’t.</p>
+      </div>
+      <article class="prose">
+        <p>
+          Comparison pages are written by vendors about their rivals ("X vs Y", "X alternatives"), and AI assistants
+          quote them as if they were neutral reviews. The Bias Index scores how one-sided each one is, using five
+          published yes/no questions.
+        </p>
+        <p>
+          <a href="https://whimsical.com">Whimsical</a> built it, and scores itself by the same rules as every other company. The method, the code and the data are
+          <a href={REPO_URL}>open on GitHub</a> under the MIT license, and every scored page links to the original, so anyone can
+          check our reading.
+        </p>
+        <h2>Why we built it</h2>
+        <p>
+          What we think of these pages is in <a href={WHY_URL}>The anatomy of a SaaS comparison page</a>: every product is
+          somehow easier, more powerful and cheaper than everyone else, depending on whose page you read. We used to publish them too. We took them down once we realized they were silly and not aligned with who we
+          are. Whimsical no longer publishes pages comparing itself with competitors, and
+          <a href={href("/whimsical.com")}>the index checks that too</a>. The index doesn't take
+          that post's word for anything: it scores every company, Whimsical included, with the same five questions.
+        </p>
+        <h2>What we don't do</h2>
+        <ul>
+          <li>We don't fact-check claims or rate products.</li>
+          <li>We don't republish the pages; we link to them.</li>
+          <li>We don't score non-English pages, pages that need JavaScript to render, or user-generated content.</li>
+        </ul>
+        <h2>How reliable it is</h2>
+        <p>
+          Scores come from OpenAI's <code>gpt-6-luna</code> classifier, tested before each version of the method goes
+          live. The test pages were labeled by Claude Opus 5.5 and cross checked by two other models: GPT-6.1
+          Sol and Gemini 3.1 Pro. On pages it was never tuned on, Luna agrees with those labels on 80–95% of answers,
+          depending on the question. The <a href={href("/methodology")}>methodology</a> has every number, including the
+          three checks that miss their target.
+        </p>
+        <h2>Crawler</h2>
+        <p>
+          <code>BiasIndexBot</code> reads public sitemaps, honors <code>robots.txt</code>, and makes at most one request
+          per second per site. <a href={href("/bot")}>More about the crawler</a>.
+        </p>
+      </article>
+    </section>
+  </main>
+</BaseLayout>

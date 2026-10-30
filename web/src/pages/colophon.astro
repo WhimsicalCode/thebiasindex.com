@@ -1,0 +1,428 @@
+---
+// Colophon: how the site is made, from the scoring to the type, colours, icon, stack and credits.
+import BaseLayout from "@/layouts/base-layout.astro"
+import { latestRun, QUESTIONS, RULES } from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { REPO_URL, repoUrl } from "@/lib/site"
+
+const run = latestRun()
+const FONTS_URL = "https://github.com/WhimsicalCode/fonts"
+const RELEASE_URL = `${REPO_URL}/releases/latest`
+
+const COLOURS = [
+  ...QUESTIONS.map((q, i) => ({ name: `Question ${i + 1}`, use: q.label, hex: q.color })),
+  { name: "Ink", use: "Text, rules, buttons", hex: "#1A1630" },
+  { name: "Muted", use: "Secondary text", hex: "#5F5A72" },
+  { name: "Line", use: "Row separators, borders", hex: "#E6E3EC" },
+  { name: "Panel", use: "Boxes", hex: "#F4F2F8" },
+  { name: "Fair", use: "Fair players", hex: "#1C6B4A" },
+]
+
+const STACK = [
+  [
+    "Site",
+    "Astro, built to static pages. Sass for styles, a few lines of TypeScript for sorting and filtering.",
+  ],
+  ["Data", "One SQLite database, read when the site is built."],
+  ["Share images", "satori lays each card out, resvg turns it into a PNG, at build time."],
+  [
+    "Crawler and pipeline",
+    "Python with uv, httpx and Beautiful Soup. It runs every Sunday on GitHub Actions.",
+  ],
+  ["Scoring", `OpenAI’s ${run?.model ?? "gpt-6-luna"}, methodology ${run?.methodology ?? "v8"}.`],
+  ["Checks", "Biome and astro check for the site, Ruff for the pipeline."],
+  ["Hosting", "Cloudflare Pages."],
+]
+---
+
+<BaseLayout
+  title="Colophon · The Bias Index"
+  description="How The Bias Index is made: the scoring, the type, the colours, the icon and the stack."
+>
+  <main>
+    <section class="wrap">
+      <div class="doc-title">
+        <h1 class="display h1">Colophon</h1>
+      </div>
+
+      <div class="col">
+        <section class="col-row">
+          <h2 class="col-h">Scoring</h2>
+          <div>
+            <p>
+              We read every page in a company’s sitemaps whose address looks like a comparison, keep the ones that
+              compare it with a named rival, and ask five yes/no questions of each. Every yes is a red flag.
+            </p>
+            <ul class="questions">
+              {
+                QUESTIONS.map((q, i) => (
+                  <li>
+                    <i class="dot" style={`background: ${q.color}`} />
+                    <span>
+                      <b>{q.label}</b>
+                      {q.question}
+                    </span>
+                    <span class="muted">{i + 1}</span>
+                  </li>
+                ))
+              }
+            </ul>
+            <p>
+              A model answers each question, and an answer counts as a red flag when it’s at least {RULES.RED_FLAG * 100}%
+              sure. Companies are ranked once {RULES.MIN_PAGES_FOR_RANKING} pages are read; one red flag per page or
+              fewer is fair. Before each version goes live, the scoring is tested against pages labelled by Claude
+              and cross-checked by two other models.
+            </p>
+            <div class="col-links">
+              <a href={href("/methodology")}>How it works</a>
+              <a href={repoUrl("docs/RESULTS.md")}>Test results</a>
+              <a href={href("/bot")}>The crawler</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Type</h2>
+          <div class="fonts">
+            <figure class="font">
+              <span class="specimen display-specimen">Aa</span>
+              <figcaption>
+                <b>Dinsical</b>
+                Headings, names and big numbers, at weights 700 and 600. A variable font.
+              </figcaption>
+            </figure>
+            <figure class="font">
+              <span class="specimen body-specimen">Aa</span>
+              <figcaption>
+                <b>Monsical</b>
+                Running text, labels and tables, at weights 400 and 700. Monospaced.
+              </figcaption>
+            </figure>
+            <p class="fonts-note">
+              Both are Whimsical’s <a href={FONTS_URL}>open-source fonts</a>, under the SIL Open Font License. This site
+              serves them itself.
+            </p>
+          </div>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Colour</h2>
+          <div>
+            <p>One colour per question, in the same order everywhere: dots, bars, legends and the icon.</p>
+            <ul class="swatches">
+              {
+                COLOURS.map(c => (
+                  <li>
+                    <i class="swatch" style={`background: ${c.hex}`} />
+                    <b>{c.name}</b>
+                    <span class="muted">{c.use}</span>
+                    <code>{c.hex}</code>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Icon</h2>
+          <div class="icon-row">
+            <svg class="icon-big" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12.00" cy="4.60" r="3.4" fill="#E9631C"></circle><circle cx="19.04" cy="9.71" r="3.4" fill="#2D63E0"></circle><circle cx="16.35" cy="17.99" r="3.4" fill="#12A06A"></circle><circle cx="7.65" cy="17.99" r="3.4" fill="#3B1E6E"></circle><circle cx="4.96" cy="9.71" r="3.4" fill="#EC3E7B"></circle></svg>
+            <p>
+              Five questions, five dots on a circle, 72° apart: orange at the top, then clockwise in question order.
+            </p>
+          </div>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Built with</h2>
+          <dl class="stack">
+            {
+              STACK.map(([what, how]) => (
+                <div>
+                  <dt>{what}</dt>
+                  <dd>{how}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Data</h2>
+          <div>
+            <p>
+              Every week’s results are published as a SQLite database and CSV files. Every company’s page is also
+              available as JSON, at its address plus <code>.json</code>.
+            </p>
+            <div class="col-links">
+              <a href={RELEASE_URL}>Weekly release</a>
+              <a href={href("/companies.json")}>companies.json</a>
+              <a href={href("/llms.txt")}>llms.txt</a>
+              <a href={REPO_URL}>The code on GitHub</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Privacy</h2>
+          <p>
+            The site sets no cookies. It counts visits with <a href="https://plausible.io">Plausible</a>, which uses no
+            cookies and collects no personal data. The fonts and images are served from this site.
+          </p>
+        </section>
+
+        <section class="col-row">
+          <h2 class="col-h">Credits</h2>
+          <div>
+            <p>Made by <a href="https://whimsical.com">Whimsical</a>.</p>
+            <p class="muted">
+              Code, method, benchmark labels and data under the MIT license. Fonts under the SIL Open Font License.
+            </p>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style lang="scss" is:global>
+  // One row per topic: its name on the left, the details on the right (stacked on phones).
+  .col {
+    margin-top: 72px;
+  }
+
+  .col-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+    gap: 64px;
+    padding: 28px 0 56px;
+    border-top: 1px solid #1a1630;
+
+    p {
+      margin: 0 0 16px;
+      max-width: 64ch;
+    }
+
+    > div > :last-child,
+    > p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .col-h {
+    margin: 0;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .col-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    margin-top: 16px;
+  }
+
+  .col code {
+    font-family: inherit;
+    font-size: 0.93em;
+  }
+
+  .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    display: block;
+    flex: none;
+  }
+
+  .questions {
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 0;
+    border-top: 1px solid #e6e3ec;
+    font-size: 14px;
+    line-height: 1.5;
+
+    li {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: baseline;
+      padding: 12px 0;
+      border-bottom: 1px solid #e6e3ec;
+    }
+
+    .dot {
+      transform: translateY(2px);
+    }
+
+    b {
+      display: block;
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+  }
+
+  .fonts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 40px;
+  }
+
+  .font {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+
+    b {
+      display: block;
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+    }
+  }
+
+  .specimen {
+    display: block;
+    font-size: 120px;
+    line-height: 1;
+  }
+
+  .display-specimen {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .body-specimen {
+    font-family: "Monsical", ui-monospace, monospace;
+    font-weight: 400;
+  }
+
+  .fonts-note {
+    grid-column: 1 / -1;
+  }
+
+  .swatches {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 28px 20px;
+    font-size: 13px;
+    line-height: 1.4;
+
+    li {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    b {
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+    }
+  }
+
+  .swatch {
+    display: block;
+    height: 56px;
+    margin-bottom: 6px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(26, 22, 48, 0.08);
+  }
+
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .icon-big {
+    width: 96px;
+    height: 96px;
+    display: block;
+    flex: none;
+  }
+
+  .stack {
+    margin: 0;
+    border-top: 1px solid #e6e3ec;
+    font-size: 14px;
+    line-height: 1.55;
+
+    div {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 20px;
+      padding: 12px 0;
+      border-bottom: 1px solid #e6e3ec;
+    }
+
+    dt {
+      color: #5f5a72;
+    }
+
+    dd {
+      margin: 0;
+    }
+  }
+
+  @container page (max-width: 760px) {
+    .col {
+      margin-top: 48px;
+    }
+
+    .col-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      padding: 20px 0 40px;
+    }
+
+    .col-h {
+      font-size: 24px;
+    }
+
+    .fonts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .specimen {
+      font-size: 88px;
+    }
+
+    .swatches {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .icon-row {
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .icon-big {
+      width: 64px;
+      height: 64px;
+    }
+
+    .stack div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
+</style>

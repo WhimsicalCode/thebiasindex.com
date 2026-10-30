@@ -1,0 +1,28 @@
+{
+  "name": "thebiasindex-web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "biome": "biome check .",
+    "biome-fix": "biome check --write .",
+    "check-astro": "astro check",
+    "check-all": "npm run biome && npm run check-astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.8",
+    "@resvg/resvg-js": "^2.6.2",
+    "astro": "^6.0.8",
+    "satori": "^0.63.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.8",
+    "@types/node": "^25.5.0",
+    "sass-embedded": "^1.98.0",
+    "typescript": "^5.9.3"
+  }
+}

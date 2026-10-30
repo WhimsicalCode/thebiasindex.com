@@ -1,0 +1,13 @@
+---
+// /<domain>: a company's page, with its first 100 scored pages. Look-up by domain, e.g. /clickup.com.
+import CompanyPage from "@/components/company-page.astro"
+import { type Company, companies } from "@/lib/db"
+
+export function getStaticPaths() {
+  return companies().map(company => ({ params: { domain: company.slug }, props: { company } }))
+}
+
+const { company } = Astro.props as { company: Company }
+---
+
+<CompanyPage company={company} page={1} />

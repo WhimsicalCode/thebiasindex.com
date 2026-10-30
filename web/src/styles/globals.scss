@@ -1,0 +1,506 @@
+// Global rules for the v2 design (design/v2/mockups). Each page keeps its own rules in the page, as in its mockup.
+// Phone layout: the `page` container is 760px wide or less, as in the mockups.
+
+// Fonts are served from this site, not a font service: no visitor data goes to a third party. Dinsical (display,
+// variable) and Monsical (body), from https://github.com/WhimsicalCode/fonts. SIL Open Font License. The TTFs next
+// to them are for the share images.
+@font-face {
+  font-family: "Dinsical";
+  src: url("../assets/fonts/Dinsical-wght.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Monsical";
+  src: url("../assets/fonts/Monsical-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Monsical";
+  src: url("../assets/fonts/Monsical-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+}
+
+a {
+  color: #1a1630;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: #c92e62;
+}
+
+.page {
+  container: page / inline-size;
+  background: #fff;
+  color: #1a1630;
+  font-family: "Monsical", ui-monospace, monospace;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page * {
+  box-sizing: border-box;
+}
+
+.wrap {
+  max-width: 1264px;
+  margin: 0 auto;
+  padding: 0 56px;
+}
+
+.display {
+  font-family: "Dinsical", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.muted {
+  color: #5f5a72;
+}
+
+// Header
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: "Dinsical", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.mark {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex: none;
+}
+
+.nav {
+  display: flex;
+  gap: 32px;
+  font-size: 14px;
+}
+
+.nav a {
+  text-decoration: none;
+}
+
+.nav a:hover,
+.nav a[aria-current] {
+  text-decoration: underline;
+}
+
+.nav-menu {
+  display: none;
+}
+
+// The phone menu, opened by the Menu button (not drawn in the mockups).
+.menu {
+  display: none;
+}
+
+// Footer
+.foot {
+  margin-top: 112px;
+  border-top: 1px solid #e6e3ec;
+  padding: 32px 0 48px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 13px;
+  color: #5f5a72;
+
+  &.home {
+    margin-top: 136px;
+  }
+}
+
+.foot nav {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.foot a {
+  color: #5f5a72;
+}
+
+// "What fair looks like" and the fair table, on the home page and /companies.
+.how {
+  margin-top: 28px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #f4f2f8;
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.how b {
+  display: block;
+  font-family: "Dinsical", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.ftbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ftbl th {
+  text-align: left;
+  font-weight: 400;
+  color: #5f5a72;
+  font-size: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a1630;
+}
+
+.ftbl td {
+  padding: 13px 0;
+  border-bottom: 1px solid #e6e3ec;
+  vertical-align: top;
+}
+
+.ftbl .num {
+  text-align: right;
+  padding-left: 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ftbl .why {
+  padding-left: 28px;
+  color: #5f5a72;
+}
+
+.ftbl a {
+  font-weight: 700;
+}
+
+// A question's tooltip on bar segments and answer dots (lib/segment-tip.ts), like the chart's tooltip: white, so
+// every question's colour shows.
+.seg-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #e6e3ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(26, 22, 48, 0.12);
+  color: #1a1630;
+  font-family: "Monsical", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: none;
+
+  &[hidden] {
+    display: none;
+  }
+
+  b {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  // The question's colour.
+  b i {
+    width: 10px;
+    height: 10px;
+    flex: none;
+    border-radius: 999px;
+  }
+
+  small {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #5f5a72;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Pages without a mockup (how it works, about, the crawler, 404): the companies page's title, then running text.
+.doc-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: end;
+  padding-top: 48px;
+}
+
+// The intro under the title instead of beside it.
+.doc-title.stacked {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+
+.doc-title .h1 {
+  font-size: 96px;
+  line-height: 0.96;
+  margin: 0;
+}
+
+.doc-title p {
+  margin: 0;
+  max-width: 54ch;
+}
+
+.doc-title code {
+  font-family: inherit;
+  font-size: 0.93em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f4f2f8;
+}
+
+.prose {
+  max-width: 72ch;
+  margin-top: 72px;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  h1 {
+    display: none; // the page title is drawn above
+  }
+
+  h2 {
+    margin: 72px 0 16px;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    margin: 40px 0 8px;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.015em;
+  }
+
+  p,
+  ul,
+  ol {
+    margin: 0 0 16px;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.4em;
+  }
+
+  li + li {
+    margin-top: 6px;
+  }
+
+  blockquote {
+    margin: 0 0 24px;
+    padding: 18px 20px;
+    border-radius: 10px;
+    background: #f4f2f8;
+    font-size: 14px;
+    line-height: 1.55;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  code {
+    font-family: inherit;
+    font-size: 0.93em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f4f2f8;
+  }
+
+  pre {
+    margin: 0 0 16px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: #f4f2f8;
+    font-size: 14px;
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background: none;
+    }
+  }
+
+  table {
+    width: 100%;
+    margin: 8px 0 24px;
+    border-collapse: collapse;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  th {
+    text-align: left;
+    vertical-align: bottom;
+    font-weight: 400;
+    font-size: 12px;
+    color: #5f5a72;
+    padding: 8px 16px 8px 0;
+    border-bottom: 1px solid #1a1630;
+  }
+
+  td {
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid #e6e3ec;
+    vertical-align: top;
+  }
+
+  hr {
+    margin: 48px 0;
+    border: 0;
+    border-top: 1px solid #e6e3ec;
+  }
+
+  img {
+    max-width: 100%;
+  }
+}
+
+// Tables wider than a phone scroll on their own (set by the methodology page's markdown wrapper).
+.prose-scroll {
+  overflow-x: auto;
+}
+
+@container page (max-width: 760px) {
+  .wrap {
+    padding: 0 20px;
+  }
+
+  .top {
+    height: 64px;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .nav-menu {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 18px;
+    border: 1.5px solid #1a1630;
+    border-radius: 999px;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+  }
+
+  .menu:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 16px;
+  }
+
+  .menu a {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    border-bottom: 1px solid #e6e3ec;
+    font-size: 16px;
+    text-decoration: none;
+  }
+
+  .menu a[aria-current] {
+    text-decoration: underline;
+  }
+
+  .foot {
+    flex-direction: column;
+    margin-top: 72px;
+
+    &.home {
+      margin-top: 88px;
+    }
+  }
+
+  .doc-title {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding-top: 20px;
+  }
+
+  .doc-title .h1 {
+    font-size: 52px;
+    line-height: 1;
+  }
+
+  .doc-title p {
+    font-size: 14px;
+  }
+
+  .prose {
+    margin-top: 48px;
+
+    h2 {
+      margin-top: 56px;
+      font-size: 30px;
+    }
+
+    h3 {
+      font-size: 19px;
+    }
+  }
+
+  .ftbl .why {
+    padding-left: 16px;
+  }
+}

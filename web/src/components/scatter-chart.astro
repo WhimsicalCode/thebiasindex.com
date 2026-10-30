@@ -1,0 +1,408 @@
+---
+// "Volume against bias" (home) and "<Company> against everyone" (company page): red flags per page (x) against
+// pages read (y, log scale), a dot per scored company, its size by total red flags. With `highlight`, every other
+// dot is grey and the company is drawn on top. Hovering, focusing or tapping a dot shows its numbers.
+import { type Company, companyHref } from "@/lib/db"
+import { fmt } from "@/lib/format"
+
+type Props = { companies: Company[]; highlight?: Company }
+const { companies, highlight } = Astro.props
+
+// Y: log10(pages + 1), so the axis starts at 0. It ends at 5,000 pages, or higher if a company outgrows that.
+const maxPages = Math.max(1, ...companies.map(c => c.scoredPages))
+const yTop = [5000, 10000, 20000, 50000, 100000].find(v => v >= maxPages) ?? maxPages
+const yOf = (pages: number) => (Math.log10(pages + 1) / Math.log10(yTop + 1)) * 100
+const xOf = (perPage: number) => (perPage / 5) * 100
+const yTicks = [0, 10, 100, 1000, 10000, 100000].filter(v => v < yTop)
+const maxTotal = Math.max(1, ...companies.map(c => c.biasLoad))
+const sizeOf = (c: Company) => Math.round(9 + 34 * Math.sqrt(c.biasLoad / maxTotal))
+
+// Dotted lines where the total is 100 and 1,000 red flags (pages = total / flags per page): small dots placed in
+// percent of the chart, so they keep their spacing at every width, as in the mockup.
+const curveDots = (total: number, opacity: number) => {
+  const dots: { x: number; y: number; opacity: number }[] = []
+  let last: { x: number; y: number } | undefined
+  for (let flags = Math.max(0.02, total / yTop); flags <= 5.0001; flags += 0.005) {
+    const x = xOf(flags)
+    const y = yOf(total / flags)
+    if (y > 100) continue
+    if (!last || Math.hypot(x - last.x, (y - last.y) * 0.45) >= 1.1) {
+      dots.push({ x, y, opacity })
+      last = { x, y }
+    }
+  }
+  return dots
+}
+const curves = [
+  { total: 1000, opacity: 0.7 },
+  { total: 100, opacity: 0.4 },
+]
+
+// Labels: on the home page, the companies the eye goes to first; on a company page, the company itself and three
+// landmarks. The offset clears the dot.
+const HOME_LABELS: Record<string, number> = {
+  "clickup.com": 28,
+  "zoho.com": 18,
+  "taskade.com": 16,
+  "monday.com": 12,
+  "nuclino.com": 12,
+  "miro.com": 12,
+  "ponder.ing": 12,
+  "coda.io": 10,
+  "lucid.co": 10,
+}
+const LANDMARKS: Record<string, number> = { "clickup.com": 28, "zoho.com": 18, "taskade.com": 16 }
+const isMe = (c: Company) => c.slug === highlight?.slug
+
+const dots = [
+  ...companies.filter(c => !c.fairPlayer && !isMe(c)).sort((a, b) => b.biasLoad - a.biasLoad),
+  ...companies.filter(c => c.fairPlayer && !isMe(c)),
+  ...companies.filter(isMe),
+].map(c => {
+  const x = xOf(c.averageScore ?? 0)
+  const y = yOf(c.scoredPages)
+  const size = sizeOf(c) + (isMe(c) ? 6 : 0)
+  const numbers = `${fmt(c.biasLoad)} red flags · ${(c.averageScore ?? 0).toFixed(1)} per page · ${fmt(c.scoredPages)} pages`
+  return {
+    c,
+    x,
+    y,
+    size,
+    numbers,
+    cls: [
+      isMe(c) ? "me" : c.fairPlayer ? "fair" : "",
+      x < 12 ? "tip-l" : x > 88 ? "tip-r" : "",
+      y > 85 ? "tip-b" : "",
+    ],
+  }
+})
+
+const offsets = highlight ? { ...LANDMARKS, [highlight.slug]: 0 } : HOME_LABELS
+const labels = dots
+  .filter(d => d.c.slug in offsets)
+  .map(d => ({
+    ...d,
+    off: isMe(d.c) ? Math.round(d.size / 2) + 15 : offsets[d.c.slug],
+  }))
+  .map(d => ({
+    ...d,
+    // Near the right edge, the label goes to the left of its dot.
+    side:
+      d.x > 95
+        ? `right: calc(${(100 - d.x).toFixed(2)}% + ${d.off}px)`
+        : `left: calc(${d.x.toFixed(2)}% + ${d.off}px)`,
+  }))
+const name = highlight?.company
+const ariaLabel = highlight
+  ? `Scatter chart of ${companies.length} companies, ${name} highlighted at ${(highlight.averageScore ?? 0).toFixed(1)} flags per page and ${fmt(highlight.scoredPages)} pages read`
+  : `Scatter chart of ${companies.length} companies: red flags per page against pages read`
+---
+
+<div class="chart-wrap">
+  <div class:list={["chart", { versus: highlight }]} role="group" aria-label={ariaLabel}>
+    <div class="band"><span><b>Fair players</b>1 flag per page or fewer</span></div>
+    {yTicks.map(v => (
+      <div class="gy" style={`bottom: ${yOf(v).toFixed(2)}%`}><span>{fmt(v)}</span></div>
+    ))}
+    {[0, 1, 2, 3, 4, 5].map(v => (
+      <div class="gx" style={`left: ${v * 20}%`}><span>{v}</span></div>
+    ))}
+    {curves.flatMap(({ total, opacity }) =>
+      curveDots(total, opacity).map(c => (
+        <i class="cdot" style={`left: ${c.x.toFixed(2)}%; bottom: ${c.y.toFixed(2)}%; opacity: ${c.opacity}`} />
+      ))
+    )}
+    {curves.map(({ total }) => (
+      <span class="curve-label" style={`bottom: ${(yOf(total / 5) + 2.2).toFixed(2)}%`}>{fmt(total)} flags</span>
+    ))}
+    {dots.map(d => (
+      <a
+        class:list={["sdot", ...d.cls]}
+        href={companyHref(d.c)}
+        aria-label={`${d.c.company}: ${d.numbers}`}
+        style={`left: ${d.x.toFixed(2)}%; bottom: ${d.y.toFixed(2)}%; width: ${d.size}px; height: ${d.size}px`}
+        ><span class="stip" aria-hidden="true"><b>{d.c.company}</b>{d.numbers}</span></a
+      >
+    ))}
+    {labels.map(d => (
+      <span class:list={["slabel", { me: isMe(d.c) }]} style={`${d.side}; bottom: ${d.y.toFixed(2)}%`} aria-hidden="true"
+        >{d.c.company}</span
+      >
+    ))}
+    <span class="axis-y">pages read</span>
+  </div>
+  <div class="axis-x">flags per page, out of five</div>
+</div>
+
+<script>
+  // Touch screens have no hover: the first tap on a dot shows its numbers, a second tap opens the company.
+  const touch = window.matchMedia("(hover: none)")
+  const dots = document.querySelectorAll<HTMLAnchorElement>(".sdot")
+  dots.forEach(dot => {
+    dot.addEventListener("click", event => {
+      if (!touch.matches || dot.classList.contains("on")) return
+      event.preventDefault()
+      dots.forEach(other => other.classList.remove("on"))
+      dot.classList.add("on")
+    })
+  })
+  document.addEventListener("click", event => {
+    if (!(event.target instanceof Element) || !event.target.closest(".sdot"))
+      dots.forEach(dot => dot.classList.remove("on"))
+  })
+</script>
+
+<style lang="scss" is:global>
+  .chart-wrap {
+    padding: 0 0 8px 56px;
+  }
+
+  .chart {
+    position: relative;
+    height: 520px;
+    border-left: 1px solid #1a1630;
+    border-bottom: 1px solid #1a1630;
+  }
+
+  .band {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 20%;
+    background: #ecf7f0;
+    border-right: 1.5px dashed #1c6b4a;
+  }
+
+  .band span {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    right: 8px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #1c6b4a;
+  }
+
+  .band b {
+    display: block;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .gy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid #eeedf2;
+  }
+
+  .gy span {
+    position: absolute;
+    right: 100%;
+    margin-right: 10px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #5f5a72;
+    white-space: nowrap;
+  }
+
+  .gx {
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    width: 0;
+    border-left: 1px solid #eeedf2;
+  }
+
+  .gx span {
+    position: absolute;
+    top: 100%;
+    margin-top: 8px;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #5f5a72;
+  }
+
+  .cdot {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: #1a1630;
+    transform: translate(-50%, 50%);
+  }
+
+  .sdot {
+    position: absolute;
+    border-radius: 999px;
+    transform: translate(-50%, 50%);
+    background: rgba(26, 22, 48, 0.8);
+    border: 1.5px solid #fff;
+  }
+
+  .sdot.fair {
+    background: #fff;
+    border: 2px solid #1c6b4a;
+  }
+
+  .chart.versus .sdot {
+    background: #d9d6e1;
+  }
+
+  .chart.versus .sdot.fair {
+    background: #fff;
+  }
+
+  .chart.versus .sdot.me {
+    background: #1a1630;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #1a1630;
+    z-index: 2;
+  }
+
+  .slabel {
+    position: absolute;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    transform: translateY(50%);
+    pointer-events: none;
+  }
+
+  .chart.versus .slabel {
+    color: #5f5a72;
+  }
+
+  .chart.versus .slabel.me {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: #1a1630;
+    z-index: 2;
+  }
+
+  .curve-label {
+    position: absolute;
+    right: 8px;
+    font-size: 11px;
+    color: #5f5a72;
+    white-space: nowrap;
+  }
+
+  .axis-x {
+    margin-top: 36px;
+    font-size: 13px;
+    color: #5f5a72;
+    text-align: center;
+  }
+
+  .axis-y {
+    position: absolute;
+    left: -56px;
+    top: -30px;
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  // A dot's numbers (not in the mockups): white, like the bars' tooltips.
+  .stip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    display: none;
+    padding: 8px 12px;
+    border: 1px solid #e6e3ec;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(26, 22, 48, 0.12);
+    color: #1a1630;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .stip b {
+    display: block;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .sdot.tip-l .stip {
+    left: -6px;
+    transform: none;
+  }
+
+  .sdot.tip-r .stip {
+    left: auto;
+    right: -6px;
+    transform: none;
+  }
+
+  .sdot.tip-b .stip {
+    bottom: auto;
+    top: calc(100% + 10px);
+  }
+
+  .sdot:focus-visible,
+  .sdot.on {
+    z-index: 3;
+  }
+
+  .sdot:focus-visible .stip,
+  .sdot.on .stip {
+    display: block;
+  }
+
+  @media (hover: hover) {
+    .sdot:hover {
+      z-index: 3;
+    }
+
+    .sdot:hover .stip {
+      display: block;
+    }
+  }
+
+  @container page (max-width: 760px) {
+    .chart-wrap {
+      padding: 0 0 8px 40px;
+    }
+
+    .chart {
+      height: 380px;
+    }
+
+    .band span {
+      font-size: 0;
+      left: 6px;
+      top: 8px;
+    }
+
+    .band b {
+      font-size: 11px;
+    }
+
+    .axis-y {
+      left: -40px;
+    }
+
+    .slabel {
+      font-size: 11px;
+    }
+
+    .chart.versus .slabel.me {
+      font-size: 15px;
+    }
+
+    .stip {
+      white-space: normal;
+      width: 200px;
+    }
+  }
+</style>

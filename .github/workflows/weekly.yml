@@ -1,0 +1,74 @@
+name: Weekly run
+
+# Crawls and scores every monitored company, then publishes the data as a GitHub release (data-YYYY-MM-DD) with the
+# SQLite database and CSV exports, and deploys the site from it. The data lives in releases, not in git, so the
+# repository stays small and every week's dataset stays downloadable.
+on:
+  schedule:
+    - cron: "0 5 * * 0" # Sundays 05:00 UTC, when most sites see the least traffic
+  workflow_dispatch:
+
+permissions:
+  contents: write # to publish the release
+
+concurrency:
+  group: weekly-run
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300 # the uncapped first run fetched for 71 min; GitHub allows 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      # Last week's database: the run only re-scores pages whose text or methodology changed.
+      - name: Get the latest data release
+        run: |
+          mkdir -p data
+          gh release download --pattern bias_index.sqlite --dir data \
+            || echo "No data release yet: starting from an empty database"
+
+      - name: Discover, fetch and score
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run pipeline/run.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the site (checks the database renders)
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish the data release
+        run: |
+          uv run pipeline/export.py
+          day="$(date -u +%Y-%m-%d)"
+          files="data/bias_index.sqlite data/export/companies.csv data/export/pages.csv"
+          if gh release view "data-$day" > /dev/null 2>&1; then
+            gh release upload "data-$day" $files --clobber
+            gh release edit "data-$day" --notes-file data/export/release-notes.md
+          else
+            gh release create "data-$day" $files --title "Data $day" --notes-file data/export/release-notes.md --latest
+          fi
+          uv run pipeline/prune_releases.py
+
+  deploy:
+    needs: run
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

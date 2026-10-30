@@ -1,0 +1,30 @@
+---
+// A company's red flags as one bar, a segment per question. The bar's length is its total on a scale shared by the
+// whole list (the largest total is full width), never cut short; .bar keeps a 3px minimum.
+import type { Company } from "@/lib/db"
+import { QUESTIONS } from "@/lib/db"
+import { redFlags } from "@/lib/format"
+
+type Props = { company: Company; max: number }
+const { company, max } = Astro.props
+const total = company.flags.reduce((sum, n) => sum + n, 0)
+const share = (n: number) => (total === 0 ? 0 : (n / total) * 100).toFixed(2)
+---
+
+<div class="bar" style={`width: ${((company.biasLoad / Math.max(1, max)) * 100).toFixed(2)}%`}>
+  {
+    company.flags.map((n, i) => (
+      <i
+        style={`width: ${share(n)}%; background: ${QUESTIONS[i].color}`}
+        data-label={QUESTIONS[i].label}
+        data-value={redFlags(n)}
+        data-question={QUESTIONS[i].question}
+        data-color={QUESTIONS[i].color}
+      />
+    ))
+  }
+</div>
+
+<script>
+  import "@/lib/segment-tip"
+</script>

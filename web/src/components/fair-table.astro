@@ -1,0 +1,37 @@
+---
+// Fair players and companies with no comparison against a named rival. With `limit`, the first rows only, always
+// keeping the row of the company that made the index.
+import { companies, companyHref, fairTable, MADE_BY } from "@/lib/db"
+import { fmt, perPage } from "@/lib/format"
+
+type Props = { limit?: number }
+const { limit } = Astro.props
+const all = fairTable(companies())
+const rows = (() => {
+  if (!limit || all.length <= limit) return all
+  const ours = all.find(row => row.company.slug === MADE_BY)
+  const first = all.slice(0, limit)
+  return ours && !first.includes(ours) ? [...first.slice(0, limit - 1), ours] : first
+})()
+---
+
+<table class="ftbl">
+  <thead>
+    <tr>
+      <th scope="col">Company</th>
+      <th scope="col" class="num">Per page</th>
+      <th scope="col" class="num">Pages</th>
+      <th scope="col" class="why">Why it’s here</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map(({ company, why }) => (
+      <tr>
+        <td><a href={companyHref(company)}>{company.company}</a></td>
+        <td class="num">{perPage(company)}</td>
+        <td class="num">{fmt(company.scoredPages)}</td>
+        <td class="why">{why}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>

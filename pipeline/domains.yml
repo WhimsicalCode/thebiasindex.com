@@ -1,0 +1,237 @@
+# Companies monitored by thebiasindex.com, checked by pipeline/companies.py before every run.
+# - `domain` is the company's identity: its page is thebiasindex.com/<domain>. Written by hand, never derived.
+# - `aliases` are other domains people know it by; their pages redirect to the domain.
+# - `hosts` are crawled. Only URLs on these hosts (or subdomains of `domain`) count for the company.
+# - `sitemaps` is optional: by default the crawler reads the `Sitemap:` lines of each host's robots.txt,
+#   then falls back to /sitemap.xml.
+- company: Miro
+  domain: miro.com
+  product_names: [Miro]
+  hosts: [miro.com]
+- company: Whimsical
+  domain: whimsical.com
+  product_names: [Whimsical]
+  hosts: [whimsical.com]
+- company: draw.io
+  domain: drawio.com
+  aliases: [draw.io, diagrams.net]  # other domains people use for it; they redirect
+  product_names: [draw.io, diagrams.net]
+  hosts: [www.drawio.com]  # draw.io itself redirects to the app
+- company: Excalidraw
+  domain: excalidraw.com
+  product_names: [Excalidraw, Excalidraw+]
+  hosts: [excalidraw.com, plus.excalidraw.com]
+- company: Ponder
+  domain: ponder.ing
+  product_names: [Ponder]
+  hosts: [ponder.ing]
+- company: Lucid
+  domain: lucid.co
+  aliases: [lucidchart.com]  # other domains people use for it; they redirect
+  product_names: [Lucid, Lucidchart, Lucidspark]
+  hosts: [lucid.co]
+- company: Mural
+  domain: mural.co
+  product_names: [Mural]
+  hosts: [www.mural.co]
+- company: ClickUp
+  domain: clickup.com
+  product_names: [ClickUp]
+  hosts: [clickup.com]
+- company: monday.com
+  domain: monday.com
+  product_names: [monday.com, monday]
+  hosts: [monday.com]
+- company: Smartsheet
+  domain: smartsheet.com
+  product_names: [Smartsheet]
+  hosts: [www.smartsheet.com]
+- company: Notion
+  domain: notion.com
+  aliases: [notion.so]  # other domains people use for it; they redirect
+  product_names: [Notion]
+  hosts: [www.notion.com]
+- company: Asana
+  domain: asana.com
+  product_names: [Asana]
+  hosts: [asana.com]
+- company: Creately
+  domain: creately.com
+  product_names: [Creately]
+  hosts: [creately.com]
+- company: SciSpace
+  domain: scispace.com
+  product_names: [SciSpace]
+  hosts: [scispace.com]
+- company: Basecamp
+  domain: basecamp.com
+  product_names: [Basecamp]
+  hosts: [basecamp.com]
+# Held-out companies (not used to tune the methodology).
+- company: Linear
+  domain: linear.app
+  product_names: [Linear]
+  hosts: [linear.app]
+  extra_urls: [https://linear.app/switch]  # not in the sitemap; other /compare-style paths are soft 404s
+- company: Figma
+  domain: figma.com
+  product_names: [Figma, FigJam, Figma Slides]
+  hosts: [www.figma.com]
+- company: Canva
+  domain: canva.com
+  product_names: [Canva]
+  hosts: [www.canva.com]
+- company: Airtable
+  domain: airtable.com
+  product_names: [Airtable]
+  hosts: [www.airtable.com]
+- company: Wrike
+  domain: wrike.com
+  product_names: [Wrike]
+  hosts: [www.wrike.com]
+- company: Coda
+  domain: coda.io
+  product_names: [Coda]
+  hosts: [coda.io]
+- company: tldraw
+  domain: tldraw.com
+  product_names: [tldraw]
+  hosts: [tldraw.com, tldraw.dev]
+- company: Gamma
+  domain: gamma.app
+  product_names: [Gamma]
+  hosts: [gamma.app]
+- company: Taskade
+  domain: taskade.com
+  product_names: [Taskade]
+  hosts: [www.taskade.com]
+- company: MindMeister
+  domain: mindmeister.com
+  product_names: [MindMeister, MeisterTask]
+  hosts: [www.mindmeister.com]
+- company: Xmind
+  domain: xmind.com
+  product_names: [Xmind]
+  hosts: [xmind.com]
+# Fresh test set (2026-10-29): not used to tune any methodology version.
+- company: Gliffy
+  domain: gliffy.com
+  product_names: [Gliffy]
+  hosts: [www.gliffy.com]
+- company: SmartDraw
+  domain: smartdraw.com
+  product_names: [SmartDraw]
+  hosts: [www.smartdraw.com]
+- company: Visme
+  domain: visme.co
+  product_names: [Visme]
+  hosts: [visme.co]
+- company: Framer
+  domain: framer.com
+  product_names: [Framer]
+  hosts: [www.framer.com]
+- company: Penpot
+  domain: penpot.app
+  product_names: [Penpot]
+  hosts: [penpot.app]
+- company: Shortcut
+  domain: shortcut.com
+  product_names: [Shortcut]
+  hosts: [www.shortcut.com]
+- company: Plane
+  domain: plane.so
+  product_names: [Plane]
+  hosts: [plane.so]
+- company: Teamwork.com
+  domain: teamwork.com
+  product_names: [Teamwork.com, Teamwork]
+  hosts: [www.teamwork.com]
+- company: Elicit
+  domain: elicit.com
+  product_names: [Elicit]
+  hosts: [elicit.com]
+- company: Consensus
+  domain: consensus.app
+  product_names: [Consensus]
+  hosts: [consensus.app]
+- company: Mindomo
+  domain: mindomo.com
+  product_names: [Mindomo]
+  hosts: [www.mindomo.com]
+- company: Milanote
+  domain: milanote.com
+  product_names: [Milanote]
+  hosts: [milanote.com]
+- company: Nuclino
+  domain: nuclino.com
+  product_names: [Nuclino]
+  hosts: [www.nuclino.com]
+- company: Zoho
+  domain: zoho.com
+  product_names: [Zoho, Zoho Projects]  # we crawl all of zoho.com, so every Zoho product
+  hosts: [www.zoho.com]
+- company: Pipedrive
+  domain: pipedrive.com
+  product_names: [Pipedrive]
+  hosts: [www.pipedrive.com]
+- company: Loom
+  domain: loom.com
+  product_names: [Loom]
+  hosts: [www.loom.com]
+# Third test set (2026-10-29): for methodology v8, never used for tuning.
+- company: Pitch
+  domain: pitch.com
+  product_names: [Pitch]
+  hosts: [pitch.com]
+- company: Prezi
+  domain: prezi.com
+  product_names: [Prezi]
+  hosts: [prezi.com]
+- company: Beautiful.ai
+  domain: beautiful.ai
+  product_names: [Beautiful.ai]
+  hosts: [www.beautiful.ai]
+- company: Venngage
+  domain: venngage.com
+  product_names: [Venngage]
+  hosts: [venngage.com]
+- company: Conceptboard
+  domain: conceptboard.com
+  product_names: [Conceptboard]
+  hosts: [conceptboard.com]
+- company: Stormboard
+  domain: stormboard.com
+  product_names: [Stormboard]
+  hosts: [stormboard.com]
+- company: ProofHub
+  domain: proofhub.com
+  product_names: [ProofHub]
+  hosts: [www.proofhub.com]
+- company: Nifty
+  domain: niftypm.com
+  product_names: [Nifty]
+  hosts: [niftypm.com]
+- company: Hive
+  domain: hive.com
+  product_names: [Hive]
+  hosts: [hive.com]
+- company: Heptabase
+  domain: heptabase.com
+  product_names: [Heptabase]
+  hosts: [heptabase.com]
+- company: Craft
+  domain: craft.do
+  product_names: [Craft]
+  hosts: [www.craft.do]
+- company: Guru
+  domain: getguru.com
+  product_names: [Guru]
+  hosts: [www.getguru.com]
+- company: Document360
+  domain: document360.com
+  product_names: [Document360]
+  hosts: [document360.com]
+- company: Todoist
+  domain: todoist.com
+  product_names: [Todoist]
+  hosts: [www.todoist.com]

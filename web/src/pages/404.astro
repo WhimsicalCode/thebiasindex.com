@@ -1,0 +1,39 @@
+---
+// Served by Cloudflare Pages with a 404 status for any path that doesn't exist, including domains we don't monitor,
+// so a lookup like /notion.so never looks like a result.
+import BaseLayout from "@/layouts/base-layout.astro"
+import { companies } from "@/lib/db"
+import { BASE, href } from "@/lib/deploy"
+import { REPO_URL } from "@/lib/site"
+
+const count = companies().length
+---
+
+<BaseLayout title="Not in the index · The Bias Index">
+  <main>
+    <section class="wrap">
+      <div class="doc-title">
+        <h1 class="display h1">Nothing here</h1>
+        <p data-missing data-base={BASE}>
+          There's no page at this address. If it's a company's domain, that company isn't in the index yet: it covers
+          {count} companies.
+        </p>
+      </div>
+      <article class="prose">
+        <p>
+          See <a href={href("/companies")}>all companies</a>, or look one up by domain: <code>thebiasindex.com/clickup.com</code>.
+          The list of monitored companies is <a href={`${REPO_URL}/blob/main/pipeline/domains.yml`}>open on GitHub</a>.
+        </p>
+      </article>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  // Name the missing domain when the path looks like one ("/notion.so").
+  const lead = document.querySelector<HTMLElement>("[data-missing]")
+  const domain = location.pathname.slice(lead?.dataset.base?.length ?? 0).replace(/^\/|\/$/g, "")
+  if (lead && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(domain) && !domain.endsWith(".json")) {
+    lead.textContent = `${domain} isn't in the index yet. It covers ${lead.textContent?.match(/\d+/)?.[0]} companies.`
+  }
+</script>

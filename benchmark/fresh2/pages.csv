@@ -1,0 +1,75 @@
+page_id,company,bucket,url
+f001,Consensus,likely_product,https://consensus.app/home/blog/borderline-personality-disorder-vs-bipolar-disorder/
+f002,Consensus,likely_product,https://consensus.app/home/blog/anxiety-attack-vs-panic-attack-whats-the-difference-and-what-does-it-feel-like/
+f003,Consensus,likely_product,https://consensus.app/home/blog/norepinephrine-vs-epinephrine-whats-the-difference/
+f004,Consensus,likely_product,https://consensus.app/home/blog/add-vs-adhd-understanding-the-differences-and-similarities/
+f005,Consensus,likely_product,https://consensus.app/home/blog/diastole-vs-systole-know-your-blood-pressure-numbers/
+f006,Consensus,likely_product,https://consensus.app/home/blog/rheumatoid-arthritis-vs-osteoarthritis-whats-the-difference/
+f007,Consensus,other,https://consensus.app/home/blog/why-you-should-consider-consensus-a-comprehensive-comparison-to-ask-ai-app/
+f008,Framer,likely_product,https://www.framer.com/compare/framer-vs-astro
+f009,Framer,likely_product,https://www.framer.com/compare/framer-vs-webflow
+f010,Framer,likely_product,https://www.framer.com/compare/framer-vs-codex
+f011,Framer,likely_product,https://www.framer.com/compare/framer-vs-wix
+f012,Framer,likely_product,https://www.framer.com/compare/framer-vs-unbounce
+f013,Framer,likely_product,https://www.framer.com/compare/framer-vs-claude-code
+f014,Framer,other,https://www.framer.com/blog/5-reasons-to-convince-your-clients-to-switch-to-framer/
+f015,Loom,likely_product,https://www.loom.com/comparison/loom-vs-microsoft-clipchamp
+f016,Loom,likely_product,https://www.loom.com/comparison/loom-vs-zoom-clips
+f017,Loom,likely_product,https://www.loom.com/comparison/loom-vs-vidyard
+f018,Mindomo,likely_product,https://www.mindomo.com/blog/mind-mapping-vs-brainstorming/
+f019,Mindomo,likely_product,https://www.mindomo.com/c/alternatives-to-mindmanager/
+f020,Mindomo,likely_product,https://www.mindomo.com/c/alternative-to-mindmeister/
+f021,Mindomo,likely_product,https://www.mindomo.com/blog/concept-map-vs-mind-map/
+f022,Mindomo,likely_product,https://www.mindomo.com/c/alternative-to-xmind/
+f023,Nuclino,likely_product,https://www.nuclino.com/alternatives/tettra-alternatives
+f024,Nuclino,likely_product,https://www.nuclino.com/solutions/bugzilla-vs-jira
+f025,Nuclino,likely_product,https://www.nuclino.com/alternatives/zenkit-alternative
+f026,Nuclino,likely_product,https://www.nuclino.com/alternatives/trello-alternative
+f027,Nuclino,likely_product,https://www.nuclino.com/solutions/milanote-vs-miro
+f028,Nuclino,likely_product,https://www.nuclino.com/solutions/monday-vs-asana
+f029,Penpot,likely_product,https://penpot.app/penpot-vs-sketch
+f030,Penpot,likely_product,https://penpot.app/penpot-vs-figma
+f031,Penpot,likely_product,https://penpot.app/penpot-vs-adobexd
+f032,Penpot,likely_product,https://penpot.app/penpot-vs-canva
+f040,Plane,likely_product,https://plane.so/blog/best-asana-alternatives-for-teams-in-2026
+f041,Plane,likely_product,https://plane.so/blog/agile-vs-scrum-vs-kanban-whats-the-difference
+f042,Plane,likely_product,https://plane.so/plane-vs-notion
+f043,Plane,likely_product,https://plane.so/blog/best-mondaycom-alternatives-for-teams-in-2026
+f044,Plane,likely_product,https://plane.so/plane-vs-linear
+f045,Plane,likely_product,https://plane.so/blog/7-best-wrike-alternatives-in-2026
+f046,Plane,other,https://plane.so/blog/agile-versus-lean-project-management
+f047,Shortcut,likely_product,https://www.shortcut.com/blog/alternatives-to-height-app/
+f048,Shortcut,likely_product,https://www.shortcut.com/blog/shortcut-vs-jira-choose-the-most-powerful/
+f049,Shortcut,likely_product,https://www.shortcut.com/blog/scrum-vs-kanban-a-comparison-guide/
+f050,Shortcut,likely_product,https://www.shortcut.com/guides/product-backlog-vs-sprint-backlog/
+f051,Shortcut,likely_product,https://www.shortcut.com/blog/8-best-jira-alternatives-for-engineering-teams-in-2026/
+f052,Shortcut,likely_product,https://www.shortcut.com/blog/pivotal-tracker-alternatives-for-project-management/
+f053,Shortcut,other,https://www.shortcut.com/blog/outgrown-trello-use-our-importer-to-switch-to-shortcut/
+f054,SmartDraw,likely_product,https://www.smartdraw.com/floor-plan/smartdraw-vs-sketchup.htm
+f055,SmartDraw,likely_product,https://www.smartdraw.com/productivity/project-vs-process.htm
+f056,SmartDraw,likely_product,https://www.smartdraw.com/floor-plan/smartdraw-vs-arcsite.htm
+f057,SmartDraw,likely_product,https://www.smartdraw.com/crime-scene/smartdraw-vs-scenepd.htm
+f058,SmartDraw,likely_product,https://www.smartdraw.com/fire-pre-plan/smartdraw-vs-firescene.htm
+f059,SmartDraw,likely_product,https://www.smartdraw.com/floor-plan/smartdraw-vs-cedreo.htm
+f060,SmartDraw,other,https://www.smartdraw.com/comparison/examples/
+f061,Teamwork.com,likely_product,https://www.teamwork.com/blog/basecamp-alternatives/
+f062,Teamwork.com,likely_product,https://www.teamwork.com/blog/excel-alternative/
+f063,Teamwork.com,likely_product,https://www.teamwork.com/blog/retainer-vs-project-profitability/
+f064,Teamwork.com,likely_product,https://www.teamwork.com/compare/harvest-vs-teamwork/
+f065,Teamwork.com,likely_product,https://www.teamwork.com/psa-software-guide/psa-vs-project-management-software/
+f066,Teamwork.com,likely_product,https://www.teamwork.com/blog/confluence-alternatives/
+f067,Teamwork.com,other,https://www.teamwork.com/blog/category/comparisons/
+f068,Visme,likely_product,https://visme.co/blog/keynote-vs-powerpoint/
+f069,Visme,likely_product,https://www.visme.co/visme-vs-beautiful-ai/
+f070,Visme,likely_product,https://visme.co/blog/prezi-alternative/
+f071,Visme,likely_product,https://visme.co/blog/lucidchart-alternatives/
+f072,Visme,likely_product,https://visme.co/blog/google-slides-alternative/
+f073,Visme,likely_product,https://visme.co/blog/creatopy-alternatives/
+f074,Visme,other,https://visme.co/blog/interactive-comparison-chart/
+f075,Zoho Projects,likely_product,https://www.zoho.com/projects/asana-alternative.html
+f076,Zoho Projects,likely_product,https://www.zoho.com/projects/teamgantt-alternative.html
+f077,Zoho Projects,likely_product,https://www.zoho.com/projects/clickup-alternative.html
+f078,Zoho Projects,likely_product,https://www.zoho.com/projects/basecamp-alternative.html
+f079,Zoho Projects,likely_product,https://www.zoho.com/projects/trello-alternative.html
+f080,Zoho Projects,likely_product,https://www.zoho.com/projects/smartsheet-alternative.html
+f081,Zoho Projects,other,https://www.zoho.com/projects/pricing-comparison.html

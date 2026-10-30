@@ -1,0 +1,57 @@
+---
+// How it works: what we read, then docs/METHODOLOGY.md.
+import BaseLayout from "@/layouts/base-layout.astro"
+import { companies, pageTypeCounts } from "@/lib/db"
+import { fmt } from "@/lib/format"
+import { Content } from "../../../docs/METHODOLOGY.md"
+
+const found = companies().reduce((sum, c) => sum + c.candidates, 0)
+const types = pageTypeCounts()
+const scored = types.competitor_comparison ?? 0
+const rest = [
+  ["Compare other companies’ products with each other", types.third_party_comparison],
+  ["Guides and articles", types.educational],
+  ["About the company’s own plans or products", types.own_products],
+  ["Lists of comparisons", types.hub],
+  ["Something else", types.other],
+  ["Couldn’t be read: blocked, gone, empty or not in English", types.unreadable],
+].filter((row): row is [string, number] => Boolean(row[1]))
+---
+
+<BaseLayout
+  title="How it works · The Bias Index"
+  description="How comparison pages are found and scored with five yes/no questions, and how reliable the scores are."
+  section="methodology"
+>
+  <main>
+    <section class="wrap">
+      <div class="doc-title stacked">
+        <h1 class="display h1">How it works</h1>
+        <p>
+          Every week we find the comparison pages SaaS companies publish about their rivals, and ask five yes/no
+          questions of each one. Every yes is a red flag.
+        </p>
+      </div>
+      <article class="prose">
+        <h2>What we read</h2>
+        <p>
+          This week, the companies’ sitemaps list {fmt(found)} pages whose address looks like a comparison (“vs”,
+          “alternative”, “compare”…). We read every one. {fmt(scored)} of them compare the company’s product with a
+          named rival: those are the pages we score. The rest turned out to be something else.
+        </p>
+        <table>
+          <thead><tr><th scope="col">What the page was</th><th scope="col" style="text-align: right">Pages</th></tr></thead>
+          <tbody>
+            <tr><td><b>Compares the company with a named rival: scored</b></td><td style="text-align: right">{fmt(scored)}</td></tr>
+            {rest.map(([what, n]) => (
+              <tr><td>{what}</td><td style="text-align: right">{fmt(n)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <div class="prose-scroll">
+          <Content />
+        </div>
+      </article>
+    </section>
+  </main>
+</BaseLayout>

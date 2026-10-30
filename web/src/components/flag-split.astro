@@ -1,0 +1,40 @@
+---
+// A company's red flags as one wide bar, a segment per question, with the five counts underneath.
+import { type Company, QUESTIONS } from "@/lib/db"
+import { fmt, redFlags } from "@/lib/format"
+
+type Props = { company: Company }
+const { company } = Astro.props
+const total = Math.max(
+  1,
+  company.flags.reduce((sum, n) => sum + n, 0)
+)
+const label = `${fmt(company.biasLoad)} red flags: ${company.flags
+  .map((n, i) => `${fmt(n)} ${QUESTIONS[i].label.toLowerCase()}`)
+  .join(", ")}`
+---
+
+<div class="split">
+  <div class="split-bar" role="img" aria-label={label}>
+    {company.flags.map((n, i) => (
+      <i
+        style={`width: ${((n / total) * 100).toFixed(2)}%; background: ${QUESTIONS[i].color}`}
+        data-label={QUESTIONS[i].label}
+        data-value={redFlags(n)}
+        data-question={QUESTIONS[i].question}
+        data-color={QUESTIONS[i].color}
+      />
+    ))}
+  </div>
+  <div class="split-key">
+    {company.flags.map((n, i) => (
+      <span>
+        <b><i class="dot" style={`background: ${QUESTIONS[i].color}`}></i>{fmt(n)}</b>{QUESTIONS[i].label}
+      </span>
+    ))}
+  </div>
+</div>
+
+<script>
+  import "@/lib/segment-tip"
+</script>

@@ -1,0 +1,10 @@
+---
+// The five questions with their colours. Each page styles .legend its own way, as in its mockup.
+import { QUESTIONS } from "@/lib/db"
+---
+
+<div class="legend">
+  {QUESTIONS.map(q => (
+    <span><i class="dot" style={`background: ${q.color}`}></i>{q.label}</span>
+  ))}
+</div>

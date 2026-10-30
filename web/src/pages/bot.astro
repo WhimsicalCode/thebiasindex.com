@@ -1,0 +1,60 @@
+---
+// /bot: the page BiasIndexBot's user agent points to, for site owners who find it in their logs.
+// The numbers mirror pipeline/fetch_pages.py and .github/workflows/weekly.yml.
+import BaseLayout from "@/layouts/base-layout.astro"
+import { href } from "@/lib/deploy"
+import { CONTACT, REPO_URL } from "@/lib/site"
+---
+
+<BaseLayout
+  title="BiasIndexBot · The Bias Index"
+  description="BiasIndexBot reads the comparison pages SaaS companies publish about their rivals, once a week, one request per second."
+>
+  <main>
+    <section class="wrap">
+      <div class="doc-title">
+        <h1 class="display h1">BiasIndexBot</h1>
+        <p>
+          If you found <code>BiasIndexBot</code> in your logs: it reads the comparison pages SaaS companies publish
+          about their rivals ("X vs Y", "X alternatives"), so <a href={href("/")}>The Bias Index</a> can score how
+          one-sided they are.
+        </p>
+      </div>
+      <article class="prose">
+        <h2>What it does</h2>
+        <ul>
+          <li>
+            Runs once a week, on Sundays from 05:00 UTC, when most sites are quietest, and identifies itself as
+            <code>BiasIndexBot/0.1 (+https://thebiasindex.com/bot)</code>.
+          </li>
+          <li>
+            Reads your <code>robots.txt</code> and the sitemaps it lists, then fetches only pages whose address looks
+            like a comparison (<code>-vs-</code>, <code>alternative</code>, <code>compare</code>…).
+          </li>
+          <li>
+            Makes one request at a time to your site, at least a second apart, or slower if your
+            <code>robots.txt</code> sets a <code>Crawl-delay</code>.
+          </li>
+          <li>
+            Stops for the week after three blocked responses in a row (403, 429 or 503) rather than retrying harder.
+          </li>
+          <li>Doesn't run JavaScript, submit forms or log in, and never republishes your pages: it links to them.</li>
+        </ul>
+        <h2>Opting out</h2>
+        <p>
+          <code>BiasIndexBot</code> honors <code>robots.txt</code>. To keep it out entirely:
+        </p>
+        <pre><code>User-agent: BiasIndexBot
+Disallow: /</code></pre>
+        <p>
+          Your company then shows as "crawler blocked" on the index, with no score: we don't guess what we couldn't read.
+        </p>
+        <h2>Contact</h2>
+        <p>
+          Questions, or a page you think we scored wrong: <code>{CONTACT}</code>. The crawler's code
+          is <a href={`${REPO_URL}/blob/main/pipeline/fetch_pages.py`}>open on GitHub</a>.
+        </p>
+      </article>
+    </section>
+  </main>
+</BaseLayout>

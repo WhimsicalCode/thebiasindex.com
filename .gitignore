@@ -1,0 +1,13 @@
+# Vendor page HTML/text: fetched locally, never republished
+data/raw/
+# Data is published as weekly GitHub releases, not committed (README, "Open data")
+data/bias_index.sqlite
+data/export/
+.venv/
+__pycache__/
+*.pyc
+web/node_modules/
+web/out/
+web/.astro/
+.DS_Store
+web/.wrangler/

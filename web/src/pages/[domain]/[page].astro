@@ -1,0 +1,18 @@
+---
+// /<domain>/<n>: the same company page, scored pages 100 at a time from the second hundred on.
+import CompanyPage, { PAGE_SIZE } from "@/components/company-page.astro"
+import { type Company, companies } from "@/lib/db"
+
+export function getStaticPaths() {
+  return companies().flatMap(company =>
+    Array.from({ length: Math.ceil(company.scoredPages / PAGE_SIZE) - 1 }, (_, i) => ({
+      params: { domain: company.slug, page: String(i + 2) },
+      props: { company, page: i + 2 },
+    }))
+  )
+}
+
+const { company, page } = Astro.props as { company: Company; page: number }
+---
+
+<CompanyPage company={company} page={page} />

@@ -1,0 +1,458 @@
+---
+// Every company (design/v2/mockups/Companies.dc.html), in one list: everyone with pages read, by total red flags (or
+// per page, or pages read), then everyone without. Ranked companies have a number and their red flags by question;
+// the others say why they aren't ranked where the bar would be. Filterable by name or website.
+import FlagBar from "@/components/flag-bar.astro"
+import QuestionLegend from "@/components/question-legend.astro"
+import BaseLayout from "@/layouts/base-layout.astro"
+import { byRedFlags, type Company, companies, companyHref, unrankedStatus } from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { fmt, perPage } from "@/lib/format"
+import { inListOrder } from "@/lib/report"
+
+const all = companies()
+const scale = byRedFlags(all)[0]?.biasLoad ?? 1
+let ranks = 0
+const rows = inListOrder(all).map(c => {
+  const status = unrankedStatus(c) ?? ""
+  return { c, status, rank: status ? "–" : String(++ranks).padStart(2, "0") }
+})
+const pagesRead = (c: Company) => (c.status === "ok" ? fmt(c.scoredPages) : "–")
+const SORTS = [
+  ["total", "Total"],
+  ["per", "Per page"],
+  ["pages", "Pages read"],
+] as const
+---
+
+<BaseLayout
+  title="Every company, ranked by red flags · The Bias Index"
+  description="Every company, ranked by every red flag on every page of its own comparison pages."
+  section="companies"
+  alternates={[{ href: href("/companies.json"), type: "application/json", title: "Every company, as JSON" }]}
+>
+  <main>
+    <section class="wrap">
+      <div class="title">
+        <h1 class="display h1">Every company</h1>
+        <p>Ranked by every red flag on every page, added up.</p>
+      </div>
+
+      <QuestionLegend />
+
+      <div class="controls">
+        <div class="sort" role="group" aria-label="Sort companies">
+          <span class="sort-label">Sort by</span>
+          {
+            SORTS.map(([id, label], i) => (
+              <button class:list={["chip", { on: i === 0 }]} type="button" aria-pressed={i === 0 ? "true" : "false"} data-sort={id}>
+                {label}
+              </button>
+            ))
+          }
+        </div>
+        <div class="filter">
+          <label for="find">Find a company</label>
+          <input id="find" type="text" placeholder="Name or website" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="rhead" aria-hidden="true">
+        <span></span><span>Company</span><span>Flags, by question</span><span style="text-align: right">Total</span
+        ><span style="text-align: right">Per page</span><span style="text-align: right">Pages</span>
+      </div>
+      <ol class="rank">
+        {
+          rows.map(({ c, rank, status }) => (
+            <li
+              data-ranked={status ? undefined : ""}
+              data-read={c.scoredPages > 0 && c.status === "ok" ? "" : undefined}
+              data-total={c.biasLoad}
+              data-per={c.averageScore ?? 0}
+              data-pages={c.scoredPages}
+              data-find={[c.company, c.slug, ...c.aliases].join(" ").toLowerCase()}
+            >
+              <a
+                class="rrow"
+                href={companyHref(c)}
+                aria-label={
+                  status
+                    ? `${c.company}: ${status.toLowerCase()}${c.scoredPages > 0 ? `, ${perPage(c)} red flags per page, ${fmt(c.scoredPages)} pages` : ""}`
+                    : `${c.company}: ${fmt(c.biasLoad)} red flags in total, ${perPage(c)} per page, ${fmt(c.scoredPages)} pages`
+                }
+              >
+                <span class="r-no">{rank}</span>
+                <span class="r-name">{c.company}</span>
+                {status ? (
+                  <span class:list={["r-status", { fair: c.fairPlayer }]}>{status}</span>
+                ) : (
+                  <FlagBar company={c} max={scale} />
+                )}
+                <span class="r-total">{c.scoredPages > 0 ? fmt(c.biasLoad) : "–"}</span>
+                <span class="r-num">{perPage(c)}</span>
+                <span class="r-num">{pagesRead(c)}</span>
+                {c.scoredPages > 0 && (
+                  <span class="r-meta">
+                    {perPage(c)} per page · {fmt(c.scoredPages)} {c.scoredPages === 1 ? "page" : "pages"}
+                  </span>
+                )}
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="empty" hidden></p>
+    </section>
+
+  </main>
+</BaseLayout>
+
+<script>
+  // Sort by total, per page or pages read, and filter by name or website (?q= from the home page's lookup).
+  const list = document.querySelector<HTMLOListElement>("ol.rank")
+  const rows = [...(list?.querySelectorAll<HTMLLIElement>("li") ?? [])]
+  const chips = document.querySelectorAll<HTMLButtonElement>("[data-sort]")
+  const find = document.querySelector<HTMLInputElement>("#find")
+  const empty = document.querySelector<HTMLElement>(".empty")
+  const value = (row: HTMLLIElement, key: string) => Number(row.dataset[key])
+  const ORDER: Record<string, (a: HTMLLIElement, b: HTMLLIElement) => number> = {
+    total: (a, b) => value(b, "total") - value(a, "total") || value(b, "pages") - value(a, "pages"),
+    per: (a, b) => value(b, "per") - value(a, "per") || value(b, "total") - value(a, "total"),
+    pages: (a, b) => value(b, "pages") - value(a, "pages"),
+  }
+  let sort = "total"
+
+  // Companies with pages read are sorted, fair players included; the ones without stay at the end. Only ranked
+  // companies are numbered.
+  const read = rows.filter(row => row.dataset.read !== undefined)
+  const rest = rows.filter(row => row.dataset.read === undefined)
+
+  function render() {
+    const query = (find?.value ?? "").trim().toLowerCase()
+    const ordered = [...read.sort(ORDER[sort]), ...rest]
+    for (const row of ordered) row.hidden = query !== "" && !(row.dataset.find ?? "").includes(query)
+    list?.replaceChildren(...ordered)
+    ordered
+      .filter(row => !row.hidden && row.dataset.ranked !== undefined)
+      .forEach((row, i) => {
+        const no = row.querySelector(".r-no")
+        if (no) no.textContent = String(i + 1).padStart(2, "0")
+      })
+    if (empty) {
+      empty.hidden = ordered.some(row => !row.hidden)
+      empty.textContent = `No company matches “${query}”.`
+    }
+  }
+
+  chips.forEach(chip =>
+    chip.addEventListener("click", () => {
+      sort = chip.dataset.sort ?? "total"
+      chips.forEach(other => {
+        other.classList.toggle("on", other === chip)
+        other.setAttribute("aria-pressed", String(other === chip))
+      })
+      render()
+    })
+  )
+  find?.addEventListener("input", render)
+  const q = new URLSearchParams(location.search).get("q")
+  if (find && q) {
+    find.value = q.replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").replace(/[/?#].*$/, "")
+    render()
+  }
+</script>
+
+<style lang="scss" is:global>
+  .title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: end;
+    padding-top: 48px;
+  }
+
+  .h1 {
+    font-size: 96px;
+    line-height: 0.96;
+    margin: 0;
+  }
+
+  .title p {
+    margin: 0;
+    max-width: 54ch;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    font-size: 13px;
+    margin-top: 48px;
+  }
+
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: block;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 14px 0;
+    border-top: 1px solid #1a1630;
+    border-bottom: 1px solid #e6e3ec;
+  }
+
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .sort-label {
+    font-size: 13px;
+    color: #5f5a72;
+    margin-right: 6px;
+  }
+
+  .chip {
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1.5px solid #d9d6e0;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: #1a1630;
+  }
+
+  .chip.on {
+    background: #1a1630;
+    color: #fff;
+    border-color: #1a1630;
+  }
+
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .filter label {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .filter input {
+    height: 44px;
+    width: 240px;
+    border: 1.5px solid #d9d6e0;
+    border-radius: 10px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+    background: #fff;
+  }
+
+  .rank {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .rhead {
+    display: grid;
+    grid-template-columns: 36px 170px minmax(0, 1fr) 84px 76px 64px;
+    gap: 20px;
+    padding: 12px 0 10px;
+    font-size: 12px;
+    color: #5f5a72;
+    border-bottom: 1px solid #1a1630;
+  }
+
+  .rrow {
+    display: grid;
+    grid-template-columns: 36px 170px minmax(0, 1fr) 84px 76px 64px;
+    gap: 20px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #e6e3ec;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .rrow:hover .r-name {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .r-no {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .r-name {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.015em;
+  }
+
+  .bar {
+    position: relative;
+    display: flex;
+    height: 14px;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 3px;
+  }
+
+  .bar i {
+    display: block;
+    height: 100%;
+  }
+
+  .r-total {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .r-num {
+    font-size: 13px;
+    color: #5f5a72;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .r-meta {
+    display: none;
+  }
+
+  // Why a company isn't ranked, where its bar would be (not in the mockup).
+  .r-status {
+    font-size: 13px;
+    color: #5f5a72;
+
+    &.fair {
+      color: #1c6b4a;
+    }
+  }
+
+  .empty {
+    margin: 28px 0 0;
+    color: #5f5a72;
+  }
+
+  @container page (max-width: 760px) {
+    .title {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      padding-top: 20px;
+    }
+
+    .h1 {
+      font-size: 52px;
+      line-height: 1;
+    }
+
+    .title p {
+      font-size: 14px;
+    }
+
+    .legend {
+      margin-top: 32px;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .sort-label {
+      flex-basis: 100%;
+    }
+
+    .chip {
+      padding: 0 14px;
+      font-size: 13px;
+    }
+
+    .filter {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .filter input {
+      width: 100%;
+    }
+
+    .rhead {
+      display: none;
+    }
+
+    .rrow {
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      padding: 14px 0;
+    }
+
+    .r-name {
+      font-size: 17px;
+    }
+
+    .r-total {
+      font-size: 17px;
+    }
+
+    .rrow .bar,
+    .rrow .r-status {
+      grid-column: 2 / -1;
+      grid-row: 2;
+    }
+
+    .rrow .bar {
+      height: 12px;
+    }
+
+    .r-status {
+      font-size: 12px;
+    }
+
+    .rrow .r-num {
+      display: none;
+    }
+
+    .r-meta {
+      display: block;
+      grid-column: 2 / -1;
+      grid-row: 3;
+      font-size: 12px;
+      color: #5f5a72;
+    }
+  }
+</style>

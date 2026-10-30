@@ -1,0 +1,128 @@
+---
+import "@/styles/globals.scss"
+import { absoluteUrl, href } from "@/lib/deploy"
+import { REPO_URL } from "@/lib/site"
+
+type Section = "companies" | "methodology" | "about"
+type Props = {
+  title: string
+  description?: string
+  /** Share image path, e.g. "/og/clickup.com.png". */
+  image?: string
+  /** Underlined in the navigation. */
+  section?: Section
+  /** The home page leaves more room above the footer. */
+  home?: boolean
+  /** The page's data in another format, e.g. a company's JSON, for crawlers and LLMs. */
+  alternates?: { href: string; type: string; title: string }[]
+  /** schema.org structured data. */
+  jsonLd?: Record<string, unknown>
+}
+const {
+  title,
+  description = "On their own comparison pages, companies win every single time. Every week, The Bias Index finds them all and scores each one for bias.",
+  image = "/og/site.png",
+  section,
+  home = false,
+  alternates = [],
+  jsonLd,
+} = Astro.props
+const canonical = new URL(Astro.url.pathname, Astro.site).href
+const RELEASE_URL = `${REPO_URL}/releases/latest`
+
+const links: { href: string; label: string; section?: Section }[] = [
+  { href: href("/companies"), label: "Companies", section: "companies" },
+  { href: href("/methodology"), label: "How it works", section: "methodology" },
+  { href: href("/about"), label: "About", section: "about" },
+  { href: REPO_URL, label: "GitHub" },
+]
+const current = (link: { section?: Section }) =>
+  link.section && link.section === section ? "page" : undefined
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={href("/favicon.ico")} sizes="32x32" />
+    <link rel="icon" href={href("/favicon.svg")} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={href("/apple-touch-icon.png")} />
+    {alternates.map(a => <link rel="alternate" type={a.type} href={a.href} title={a.title} />)}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Bias Index" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={absoluteUrl(image)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {
+      jsonLd && (
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")}
+        />
+      )
+    }
+    <!-- Privacy-friendly analytics by Plausible: no cookies, no personal data. -->
+    <script is:inline async src="https://plausible.io/js/pa-PG4ZEFQ9da4i2ao6FIvfd.js"></script>
+    <script is:inline>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
+    </script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="wrap top">
+        <a class="brand" href={href("/")}>
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12.00" cy="4.60" r="3.4" fill="#E9631C"></circle><circle cx="19.04" cy="9.71" r="3.4" fill="#2D63E0"></circle><circle cx="16.35" cy="17.99" r="3.4" fill="#12A06A"></circle><circle cx="7.65" cy="17.99" r="3.4" fill="#3B1E6E"></circle><circle cx="4.96" cy="9.71" r="3.4" fill="#EC3E7B"></circle></svg>
+          The Bias Index
+        </a>
+        <nav class="nav" aria-label="Main">
+          {links.map(link => <a href={link.href} aria-current={current(link)}>{link.label}</a>)}
+        </nav>
+        <button class="nav-menu" type="button" aria-expanded="false" aria-controls="menu" data-menu-button>
+          Menu
+        </button>
+      </header>
+      <nav class="wrap menu" id="menu" aria-label="Main" hidden>
+        {links.map(link => <a href={link.href} aria-current={current(link)}>{link.label}</a>)}
+      </nav>
+
+      <slot />
+
+      <footer class="wrap">
+        <div class:list={["foot", { home }]}>
+          <span>The Bias Index · Read every week · MIT license</span>
+          <nav aria-label="Footer">
+            <a href={href("/companies")}>Companies</a>
+            <a href={href("/methodology")}>How it works</a>
+            <a href={RELEASE_URL}>Data</a>
+            <a href={href("/llms.txt")}>llms.txt</a>
+            <a href={href("/colophon")}>Colophon</a>
+            <a href={REPO_URL}>GitHub</a>
+          </nav>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
+
+<script>
+  // Phone: the Menu button opens the navigation under the header.
+  const button = document.querySelector<HTMLButtonElement>("[data-menu-button]")
+  const menu = document.getElementById("menu")
+  button?.addEventListener("click", () => {
+    const open = button.getAttribute("aria-expanded") !== "true"
+    button.setAttribute("aria-expanded", String(open))
+    button.textContent = open ? "Close" : "Menu"
+    if (menu) menu.hidden = !open
+  })
+</script>
