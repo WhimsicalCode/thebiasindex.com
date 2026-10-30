@@ -830,3 +830,24 @@
   category: website_builders
   product_names: [Wix]
   hosts: [www.wix.com]
+# Added 2026-10-30, enterprise suites.
+- company: Adobe
+  domain: adobe.com
+  category: design_prototyping
+  product_names: [Adobe, Acrobat, Photoshop, Illustrator, Adobe Express, Premiere Pro, Firefly]
+  hosts: [www.adobe.com]
+- company: Intuit
+  domain: intuit.com
+  category: finance_accounting
+  product_names: [Intuit, QuickBooks, TurboTax]
+  hosts: [www.intuit.com, quickbooks.intuit.com]
+- company: Salesforce
+  domain: salesforce.com
+  category: crm
+  product_names: [Salesforce, Agentforce, Sales Cloud, Service Cloud]
+  hosts: [www.salesforce.com]
+- company: Workday
+  domain: workday.com
+  category: hr
+  product_names: [Workday]
+  hosts: [www.workday.com]

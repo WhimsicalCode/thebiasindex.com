@@ -25,6 +25,7 @@ import re
 import sqlite3
 import sys
 import time
+import unicodedata
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
@@ -160,6 +161,13 @@ def is_english(lang):
     return not lang or lang.lower().startswith("en")
 
 
+def mostly_non_latin(text):
+    """Pages that declare English but are written in Japanese, Korean... (postman.com/jp/)."""
+    letters = [c for c in text[:5000] if c.isalpha()]
+    other = sum(1 for c in letters if not unicodedata.name(c, "").startswith("LATIN"))
+    return bool(letters) and other / len(letters) > 0.3
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--db", default=str(REPO / "data" / "bias_index.sqlite"))
@@ -214,7 +222,7 @@ def main():
         if known - set(urls):
             added = len(known - set(urls))
             print(f"{entry['company']:<14} +{added} known pages not in this week's sitemap", flush=True)
-        urls = sorted(set(urls) | known)
+        urls = discover.dedupe_regional(set(urls) | known)
         sample = stable_sample(urls, args.max_pages_per_company)
         status = "no_sitemap" if sitemap_urls == 0 and not urls else "ok"
         db.execute(
@@ -274,6 +282,8 @@ def main():
             skip = f"redirects off the company's domains ({urlparse(result['final_url']).hostname})"
         elif not is_english(result["lang"]):
             skip = f"not English ({result['lang']})"
+        elif mostly_non_latin(text):
+            skip = "not English (text)"
         elif len(text) < MIN_TEXT_CHARS:
             skip = "no readable text"
 
@@ -323,6 +333,10 @@ def main():
                 print(f"  classify failed for {page['url']}: {error}")
                 continue
             answers = {answer["name"]: answer for answer in body.get("answers", [])}
+            missing = [name for name in classify.QUESTIONS if "probability" not in answers.get(name, {})]
+            if "page_type" not in answers or missing:
+                print(f"  classify failed for {page['url']}: incomplete answers {body.get('answers')}"[:400])
+                continue
             page_type = answers.get("page_type", {})
             flags, unclear = classify.score(answers)
             probabilities = [classify.red_flag_probability(answers, name) for name in classify.QUESTIONS]
@@ -336,6 +350,8 @@ def main():
             )
             input_tokens += (body.get("usage") or {}).get("input_tokens", 0)
             classified += 1
+            if classified % 200 == 0:
+                db.commit()  # a crash late in a long run keeps what was already scored
     db.execute(
         """update runs set finished_at = ?, companies = ?, pages_fetched = ?, pages_classified = ?,
              pages_reused = ?, input_tokens = ? where run_id = ?""",

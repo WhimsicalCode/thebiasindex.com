@@ -12,6 +12,7 @@ import html
 import re
 import sys
 import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urldefrag, urljoin, urlparse
 
@@ -25,7 +26,7 @@ MAX_SITEMAPS = 200
 # User-generated content and template galleries on vendor domains: not the vendor's own comparisons, never scored.
 USER_CONTENT = (r"figma\.com/community/|coda\.io/@|airtable\.com/universe/|consensus\.app/questions/"
                 r"|framer\.com/marketplace/|/templates/|smartdraw\.com/comparisons/examples/|prezi\.com/p/"
-                r"|scite\.ai/reports/|coggle\.it/diagram/|postman\.com/[^/]+/[^/]+/(?:request|collection)/"
+                r"|scite\.ai/reports/|coggle\.it/diagram/|quickbooks\.intuit\.com/community/|postman\.com/[^/]+/[^/]+/(?:request|collection)/"
                 r"|postman\.com/[^/]+/[^/]+/overview/?$|\.md$"
                 r"|padlet\.com/[^/]+/(?=[a-z0-9]*[0-9])[a-z0-9]{10,}/?$")
 
@@ -50,6 +51,19 @@ def is_english_path(url):
         if match and match.group(1).lower() in LANGUAGES:
             return False
     return True
+
+
+def dedupe_regional(urls):
+    """Regional copies count once: URLs that differ only by a locale as the first path segment (zoho.com/ae/...,
+    workday.com/en-gb/...) are one page, and the shortest URL is kept."""
+    groups = defaultdict(list)
+    for url in urls:
+        parts = urlparse(url)
+        segments = [s for s in parts.path.split("/") if s]
+        if segments and segments[0] != "vs" and LOCALE_SEGMENT.match(segments[0]):
+            segments = segments[1:]
+        groups[(parts.netloc, "/".join(segments))].append(url)
+    return sorted(min(group, key=lambda url: (len(url), url)) for group in groups.values())
 
 
 def is_foreign_sitemap(url):
