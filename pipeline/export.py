@@ -3,8 +3,8 @@
 Usage: uv run pipeline/export.py [--db data/bias_index.sqlite] [--out data/export]
 
 Writes OUT/companies.csv (one row per monitored company), OUT/pages.csv (every candidate page ever checked, with a
-`current` column for pages seen in the company's latest run) and OUT/release-notes.md. Answers are red-flag probabilities:
-0.8 or more is a red flag, 0.2 or less is a no, anything between is unclear (docs/METHODOLOGY.md).
+`current` column for pages seen in the company's latest run) and OUT/release-notes.md. Answers are red-flag
+probabilities: 0.8 or more is a red flag, 0.2 or less is a no, anything between is unclear (docs/METHODOLOGY.md).
 """
 
 import argparse
