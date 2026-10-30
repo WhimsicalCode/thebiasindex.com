@@ -26,7 +26,9 @@ MAX_SITEMAPS = 200
 # User-generated content and template galleries on vendor domains: not the vendor's own comparisons, never scored.
 USER_CONTENT = (r"figma\.com/community/|coda\.io/@|airtable\.com/universe/|consensus\.app/questions/"
                 r"|framer\.com/marketplace/|/templates/|smartdraw\.com/comparisons/examples/|prezi\.com/p/"
-                r"|scite\.ai/reports/|coggle\.it/diagram/|quickbooks\.intuit\.com/community/|postman\.com/[^/]+/[^/]+/(?:request|collection)/"
+                r"|scite\.ai/reports/|coggle\.it/diagram/|quickbooks\.intuit\.com/community/"
+                r"|quickbooks\.intuit\.com/learn-support/.+/00/\d+$|webflow\.com/made-in-webflow/"
+                r"|postman\.com/[^/]+/[^/]+/(?:request|collection)/"
                 r"|postman\.com/[^/]+/[^/]+/overview/?$|\.md$"
                 r"|padlet\.com/[^/]+/(?=[a-z0-9]*[0-9])[a-z0-9]{10,}/?$")
 
