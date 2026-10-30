@@ -124,11 +124,13 @@ def discover_entry(client, entry):
         total += len(found)
         urls |= {url for url in found
                  if discover.CANDIDATE.search(urlparse(url).path) and discover.is_english_path(url)}
-    urls |= set(entry.get("extra_urls", []))
+    from_homepage = discover.merge_links(urls, discover.homepage_links(client, entry))
+    urls |= from_homepage | set(entry.get("extra_urls", []))
     foreign = {url for url in urls if not companies.owns(entry, url)}
     urls = sorted(url for url in urls - foreign if not user_content.search(url))
     dropped = f" dropped {len(foreign)} on other hosts" if foreign else ""
-    print(f"{entry['company']:<14} sitemap urls={total:<8} candidates={len(urls)}{dropped}", flush=True)
+    linked = f" ({len(from_homepage)} from the homepage)" if from_homepage else ""
+    print(f"{entry['company']:<14} sitemap urls={total:<8} candidates={len(urls)}{linked}{dropped}", flush=True)
     return total, urls
 
 

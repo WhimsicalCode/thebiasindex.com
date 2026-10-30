@@ -8,11 +8,12 @@ the URL-pattern prefilter described in docs/METHODOLOGY.md ("Which pages are che
 
 import csv
 import gzip
+import html
 import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlparse
+from urllib.parse import urldefrag, urljoin, urlparse
 
 import companies as company_list
 import httpx
@@ -110,6 +111,37 @@ def discover_host(client, name, sitemaps=None):
     return seen, urls
 
 
+HREF = re.compile(r"""href=["']([^"'#]+)""", re.IGNORECASE)
+ASSET = re.compile(r"\.(?:css|js|json|xml|png|jpe?g|gif|svg|webp|ico|pdf|zip|mp4|woff2?)$", re.IGNORECASE)
+
+
+def homepage_links(client, entry):
+    """Comparison-style links on the company's homepage (its navigation and footer). Sitemaps sometimes leave
+    these out (mermaid.ai/comparison/...), yet they are the comparisons a company features most. One request;
+    query strings (tracking parameters) are dropped."""
+    host = entry["hosts"][0]
+    try:
+        response = client.get(f"https://{host}/")
+    except httpx.HTTPError:
+        return set()
+    if response.status_code != 200:
+        return set()
+    links = set()
+    for href in HREF.findall(response.text[:2_000_000]):
+        url = urldefrag(urljoin(str(response.url), html.unescape(href).strip()))[0].split("?")[0]
+        path = urlparse(url).path
+        if url.startswith("http") and company_list.owns(entry, url) and CANDIDATE.search(path) \
+                and not ASSET.search(path) and is_english_path(url):
+            links.add(url)
+    return links
+
+
+def merge_links(sitemap_urls, links):
+    """Homepage links not already listed in a sitemap (ignoring a trailing slash)."""
+    listed = {url.rstrip("/") for url in sitemap_urls}
+    return {url for url in links if url.rstrip("/") not in listed}
+
+
 def discover_company(client, entry):
     rows, sitemaps_read, total = [], 0, 0
     for name in entry["hosts"]:
@@ -119,6 +151,8 @@ def discover_company(client, entry):
         for url in sorted(urls):
             if CANDIDATE.search(urlparse(url).path) and is_english_path(url) and company_list.owns(entry, url):
                 rows.append({"company": entry["company"], "host": name, "url": url})
+    for url in sorted(merge_links({row["url"] for row in rows}, homepage_links(client, entry))):
+        rows.append({"company": entry["company"], "host": urlparse(url).netloc, "url": url})
     # Pages a sitemap leaves out (linear.app/switch), added by hand in domains.yml.
     listed = {row["url"] for row in rows}
     for url in entry.get("extra_urls", []):

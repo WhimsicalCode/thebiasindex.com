@@ -500,10 +500,10 @@
   category: diagramming_whiteboards
   product_names: [Klaxoon]
   hosts: [klaxoon.com]
-- company: Mermaid
+- company: Mermaid Chart
   domain: mermaid.ai
   category: diagramming_whiteboards
-  product_names: [Mermaid]
+  product_names: [Mermaid Chart, Mermaid]
   hosts: [mermaid.ai]
 - company: Napkin AI
   domain: napkin.ai
