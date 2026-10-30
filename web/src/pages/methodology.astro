@@ -5,7 +5,7 @@ import { companies, pageTypeCounts } from "@/lib/db"
 import { fmt } from "@/lib/format"
 import { Content } from "../../../docs/METHODOLOGY.md"
 
-const found = companies().reduce((sum, c) => sum + c.candidates, 0)
+const candidates = companies().reduce((sum, c) => sum + c.candidates, 0)
 const types = pageTypeCounts()
 const scored = types.competitor_comparison ?? 0
 const rest = [
@@ -35,14 +35,14 @@ const rest = [
       <article class="prose">
         <h2>What we read</h2>
         <p>
-          This week, the companies’ sitemaps list {fmt(found)} pages whose address looks like a comparison (“vs”,
-          “alternative”, “compare”…). We read every one. {fmt(scored)} of them compare the company’s product with a
-          named rival: those are the pages we score. The rest turned out to be something else.
+          This week, the companies’ sitemaps list {fmt(candidates)} <b>candidate pages</b>: pages whose address
+          looks like a comparison (“vs”, “alternative”, “compare”…). The AI reads every one, and {fmt(scored)} of them
+          are <b>compare pages</b>, comparing the company with a named rival. Only compare pages are scored.
         </p>
         <table>
           <thead><tr><th scope="col">What the page was</th><th scope="col" style="text-align: right">Pages</th></tr></thead>
           <tbody>
-            <tr><td><b>Compares the company with a named rival: scored</b></td><td style="text-align: right">{fmt(scored)}</td></tr>
+            <tr><td><b>Compare pages: scored</b></td><td style="text-align: right">{fmt(scored)}</td></tr>
             {rest.map(([what, n]) => (
               <tr><td>{what}</td><td style="text-align: right">{fmt(n)}</td></tr>
             ))}

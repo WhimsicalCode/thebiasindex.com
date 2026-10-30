@@ -32,7 +32,7 @@ tells some readers to pick it, admits one thing it can't do, and criticizes with
 Companies are ranked by total red flags across their competitor comparisons, so volume counts as well as bias. Fair
 players (1 red flag per page or fewer, across at least 3 pages) aren't ranked; they're proof it can be done.
 
-<img src="docs/images/chart.png" alt="Volume against bias: red flags per page across, pages read up, dot size by total red flags" width="100%">
+<img src="docs/images/chart.png" alt="Volume against bias: red flags per page across, compare pages up, dot size by total red flags" width="100%">
 
 ## Look a company up by its domain
 
@@ -60,8 +60,8 @@ Reproduce the published table without any API key: `uv run pipeline/consolidated
 ## Open data
 
 Every weekly run is published as a [release](https://github.com/WhimsicalCode/thebiasindex.com/releases/latest): the SQLite database the site is built from, plus
-`companies.csv` (one row per company) and `pages.csv` (every page checked, with its five answers as red-flag
-probabilities). The latest is always at
+`companies.csv` (one row per company) and `pages.csv` (every candidate page, with the five answers of each compare
+page as red-flag probabilities). The latest is always at
 
 ```
 https://github.com/WhimsicalCode/thebiasindex.com/releases/latest/download/bias_index.sqlite

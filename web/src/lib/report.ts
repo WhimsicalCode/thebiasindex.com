@@ -7,6 +7,7 @@ import {
   companyPath,
   latestRun,
   notMeasured,
+  type Page,
   pagesFor,
   QUESTIONS,
   RULES,
@@ -18,6 +19,34 @@ import { fmt, ordinal, perPage, redFlags } from "@/lib/format"
 import { REPO_URL } from "@/lib/site"
 
 const ANSWER = { flag: "yes", ok: "no", unclear: "unclear" } as const
+
+// Two words, used the same way everywhere. A candidate page is one whose address looks like a comparison ("vs",
+// "alternative", "compare", "switch"). A compare page is a candidate that turns out to compare the company with a
+// named rival: only compare pages are scored.
+
+/** What a candidate page that isn't a compare page turned out to be, by page type, in the order we list them. */
+export const NOT_COMPARE: { kind: string; label: string }[] = [
+  { kind: "third_party_comparison", label: "Compares other companies’ products" },
+  { kind: "educational", label: "A guide or article" },
+  { kind: "own_products", label: "About its own plans or products" },
+  { kind: "hub", label: "A list of comparisons" },
+  { kind: "other", label: "Something else" },
+  { kind: "unreadable", label: "Couldn’t be read" },
+]
+
+/** A candidate page's kind: its page type, or "unreadable" when we couldn't read it. */
+export function kindOf(page: Page): string {
+  return page.pageType ?? "unreadable"
+}
+
+/** What a candidate page that isn't a compare page turned out to be, in a few words. */
+export function whatItIs(page: Page): string {
+  if (!page.pageType)
+    return page.skipReason === "not checked yet"
+      ? "Not read yet: we ran out of time on this site"
+      : `Couldn’t be read: ${page.skipReason ?? "unknown"}`
+  return NOT_COMPARE.find(k => k.kind === page.pageType)?.label ?? "Something else"
+}
 
 /** Rank among companies with at least 3 scored comparisons (1 = most red flags), or null. */
 export function rankOf(company: Company): number | null {
@@ -39,7 +68,8 @@ export function verdictOf(company: Company): Verdict {
   const name = company.company
   const ranked = byRedFlags(companies())
   const rank = rankOf(company)
-  const pages = (n: number) => `${fmt(n)} page${n === 1 ? "" : "s"}`
+  const comparePages = (n: number) => `${fmt(n)} compare page${n === 1 ? "" : "s"}`
+  const candidatePages = (n: number) => `${fmt(n)} candidate page${n === 1 ? "" : "s"}`
   if (company.status === "unreachable")
     return {
       headline: `We can’t read ${name}’s pages yet.`,
@@ -49,31 +79,27 @@ export function verdictOf(company: Company): Verdict {
   if (company.status !== "ok")
     return {
       headline: `We can’t read ${name}’s pages yet.`,
-      found: `We can’t read ${name}’s sitemaps, so we haven’t found its comparison pages.`,
+      found: `We can’t read ${name}’s sitemaps, so we haven’t found its candidate pages.`,
       total: "",
     }
   if (company.scoredPages === 0)
     return company.candidates === 0
       ? {
-          headline: `${name} publishes no comparison pages.`,
-          found:
-            "Its sitemaps list no page comparing it with another product, so there is nothing to score.",
+          headline: `${name} publishes no compare pages.`,
+          found: `We found no candidate pages on ${name}’s website, so there is nothing to score.`,
           total: "It isn’t ranked, and it isn’t penalised.",
         }
       : {
-          headline: `${name} publishes no comparison against a named rival.`,
-          found: `${name} publishes ${pages(company.candidates)} that compare it with other products. None of them compares it with a named rival, so there is nothing to score.`,
+          headline: `${name} publishes no compare pages.`,
+          found: `We found ${candidatePages(company.candidates)} on ${name}’s website, of which 0 are compare pages, so there is nothing to score.`,
           total: "It isn’t ranked, and it isn’t penalised.",
         }
   const read = company.scoredPages
-  const ofThem =
-    read === company.candidates && read > 1
-      ? `All ${fmt(read)} of them compare`
-      : `${fmt(read)} of them compare${read === 1 ? "s" : ""}`
+  const ofWhich = read === company.candidates && read > 1 ? `all ${fmt(read)}` : fmt(read)
   const found =
     company.candidates < read
-      ? `${name}’s sitemaps don’t list its comparison pages this week. We read ${pages(read)} that compare it with a named rival before.`
-      : `${name} publishes ${pages(company.candidates)} that compare it with other products. ${ofThem} it with a named rival, and those are the ones we read.`
+      ? `${name}’s sitemaps don’t list its compare pages this week. We scored ${comparePages(read)} before.`
+      : `We found ${candidatePages(company.candidates)} on ${name}’s website, of which ${ofWhich} ${read === 1 ? "is a compare page" : "are compare pages"}. Those are the ones we score.`
   const together =
     read === 1
       ? `That page carries ${redFlags(company.biasLoad)}`
@@ -82,9 +108,9 @@ export function verdictOf(company: Company): Verdict {
     ? `${together}. At ${perPage(company)} per page, ${name} is a fair player: one red flag per page or fewer.`
     : rank
       ? `${together}, the ${rank === 1 ? "" : `${ordinal(rank)} `}most of the ${ranked.length} companies we rank.`
-      : `${together}. With fewer than three pages read, ${name} isn’t ranked.`
+      : `${together}. With fewer than three compare pages, ${name} isn’t ranked.`
   return {
-    headline: `A typical comparison page from ${name} raises ${perPage(company)} of our five red flags.`,
+    headline: `A typical compare page from ${name} raises ${perPage(company)} of our five red flags.`,
     found,
     total,
   }
@@ -96,8 +122,8 @@ export function summaryOf(company: Company): string {
   return [headline, found, total].filter(Boolean).join(" ")
 }
 
-/** The order of /companies and llms.txt: everyone with pages read by total red flags (then pages read), then the
- * companies with no comparison pages, then the ones we can't measure yet. */
+/** The order of /companies and llms.txt: everyone with compare pages by total red flags (then compare pages), then
+ * the companies with none, then the ones we can't measure yet. */
 export function inListOrder(list: Company[]): Company[] {
   const read = list
     .filter(c => c.status === "ok" && c.scoredPages > 0)
@@ -108,7 +134,9 @@ export function inListOrder(list: Company[]): Company[] {
 /** Machine-readable report, served as /<domain>.json. */
 export function reportOf(company: Company) {
   const run = latestRun()
-  const pages = pagesFor(company.slug).filter(p => p.pageType === "competitor_comparison")
+  const candidates = pagesFor(company.slug)
+  const pages = candidates.filter(p => p.pageType === "competitor_comparison")
+  const others = candidates.filter(p => p.pageType !== "competitor_comparison")
   const checked = company.status === "ok"
   return {
     domain: company.slug,
@@ -123,9 +151,8 @@ export function reportOf(company: Company) {
     red_flags_total: checked ? company.biasLoad : null,
     red_flags_per_page:
       company.averageScore === null ? null : Number(company.averageScore.toFixed(2)),
-    competitor_comparisons_scored: company.scoredPages,
-    pages_checked: company.sampled,
-    comparison_style_pages_found: company.candidates,
+    compare_pages: company.scoredPages,
+    candidate_pages: company.candidates,
     run_date: run?.startedAt.slice(0, 10) ?? null,
     methodology: { version: run?.methodology ?? null, url: absoluteUrl("/methodology") },
     source: REPO_URL,
@@ -135,6 +162,13 @@ export function reportOf(company: Company) {
       title: p.title,
       red_flags: p.score,
       answers: Object.fromEntries(p.answers.map((a, i) => [`q${i + 1}`, ANSWER[a]])),
+    })),
+    // The candidate pages that aren't compare pages, kept apart so totals computed from `pages` match the above.
+    other_candidate_pages: others.map(p => ({
+      url: p.url,
+      title: p.title,
+      type: kindOf(p),
+      what_it_is: whatItIs(p),
     })),
   }
 }

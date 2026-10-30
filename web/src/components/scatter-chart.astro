@@ -1,6 +1,6 @@
 ---
 // "Volume against bias" (home) and "<Company> against everyone" (company page): red flags per page (x) against
-// pages read (y, log scale), a dot per scored company, its size by total red flags. With `highlight`, every other
+// compare pages (y, log scale), a dot per scored company, its size by total red flags. With `highlight`, every other
 // dot is grey and the company is drawn on top. Hovering, focusing or tapping a dot shows its numbers.
 import { type Company, companyHref } from "@/lib/db"
 import { fmt } from "@/lib/format"
@@ -94,8 +94,8 @@ const labels = dots
   }))
 const name = highlight?.company
 const ariaLabel = highlight
-  ? `Scatter chart of ${companies.length} companies, ${name} highlighted at ${(highlight.averageScore ?? 0).toFixed(1)} flags per page and ${fmt(highlight.scoredPages)} pages read`
-  : `Scatter chart of ${companies.length} companies: red flags per page against pages read`
+  ? `Scatter chart of ${companies.length} companies, ${name} highlighted at ${(highlight.averageScore ?? 0).toFixed(1)} flags per page and ${fmt(highlight.scoredPages)} compare pages`
+  : `Scatter chart of ${companies.length} companies: red flags per page against compare pages`
 ---
 
 <div class="chart-wrap">
@@ -129,7 +129,7 @@ const ariaLabel = highlight
         >{d.c.company}</span
       >
     ))}
-    <span class="axis-y">pages read</span>
+    <span class="axis-y">compare pages</span>
   </div>
   <div class="axis-x">flags per page, out of five</div>
 </div>

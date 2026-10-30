@@ -98,8 +98,17 @@ const ANSWER = {
       <div class="facts">
         <div class="fact"><b>{ok ? fmt(company.biasLoad) : "–"}</b><span>red flags in total</span></div>
         <div class="fact"><b>{perPage(company)}</b><span>red flags per page</span></div>
-        <div class="fact"><b>{ok ? fmt(company.scoredPages) : "–"}</b><span>pages read</span></div>
-        <div class="fact"><b>{ok || company.candidates > 0 ? fmt(company.candidates) : "–"}</b><span>pages found</span></div>
+        <div class="fact"><b>{ok ? fmt(company.scoredPages) : "–"}</b><span>compare pages</span></div>
+        {
+          company.candidates > 0 ? (
+            <a class="fact fact-link" href={href(`${companyPath(company)}/candidates`)}>
+              <b>{fmt(company.candidates)}</b>
+              <span>candidate pages →</span>
+            </a>
+          ) : (
+            <div class="fact"><b>{ok ? "0" : "–"}</b><span>candidate pages</span></div>
+          )
+        }
       </div>
 
       {company.biasLoad > 0 && <FlagSplit company={company} />}
@@ -111,7 +120,7 @@ const ANSWER = {
           <div class="section-head">
             <h2 class="display h2">{name} against everyone</h2>
             <p class="muted">
-              Left to right: red flags per page. Bottom to top: pages read, on a log scale. Bigger dots have more red
+              Left to right: red flags per page. Bottom to top: compare pages, on a log scale. Bigger dots have more red
               flags in total. Every grey dot is another company.
             </p>
           </div>
@@ -201,7 +210,7 @@ const ANSWER = {
           <p class="muted">
             {
               company.scoredPages > 0
-                ? `Every page we read for ${name}, with its five answers, as JSON.`
+                ? `Every compare page we scored for ${name}, with its five answers, as JSON.`
                 : `What we know about ${name}, as JSON.`
             }{" "}
             The whole index is in the weekly release.
@@ -346,6 +355,19 @@ const ANSWER = {
   .fact span {
     font-size: 13px;
     color: #5f5a72;
+  }
+
+  .fact-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .fact-link span {
+    text-decoration: underline;
+  }
+
+  .fact-link:hover span {
+    color: #1a1630;
   }
 
   .split {

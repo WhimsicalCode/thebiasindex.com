@@ -2,8 +2,8 @@
 
 Usage: uv run pipeline/export.py [--db data/bias_index.sqlite] [--out data/export]
 
-Writes OUT/companies.csv (one row per monitored company), OUT/pages.csv (every page ever checked, with a `current`
-column for pages seen in the company's latest run) and OUT/release-notes.md. Answers are red-flag probabilities:
+Writes OUT/companies.csv (one row per monitored company), OUT/pages.csv (every candidate page ever checked, with a
+`current` column for pages seen in the company's latest run) and OUT/release-notes.md. Answers are red-flag probabilities:
 0.8 or more is a red flag, 0.2 or less is a no, anything between is unclear (docs/METHODOLOGY.md).
 """
 
@@ -35,8 +35,8 @@ def main():
     db = sqlite3.connect(args.db)
 
     write_csv(out / "companies.csv", db.execute(f"""
-        select c.slug as domain, c.company, c.category, c.status, c.candidates,
-               count(p.url) filter (where p.page_type = 'competitor_comparison') as competitor_comparisons,
+        select c.slug as domain, c.company, c.category, c.status, c.candidates as candidate_pages,
+               count(p.url) filter (where p.page_type = 'competitor_comparison') as compare_pages,
                coalesce(sum(p.score) filter (where p.page_type = 'competitor_comparison'), 0) as red_flags_total,
                round(avg(p.score) filter (where p.page_type = 'competitor_comparison'), 2) as red_flags_per_page
         from companies c left join pages p on p.company_slug = c.slug and {CURRENT}
@@ -60,7 +60,7 @@ def main():
         where coalesce(c.monitored, 1) = 1""").fetchone()
     (out / "release-notes.md").write_text(
         f"Weekly run of {run[0][:10]}, methodology {run[1]} ({run[2]}).\n\n"
-        f"- {companies} companies monitored\n- {scored:,} competitor comparisons scored\n"
+        f"- {companies} companies monitored\n- {scored:,} compare pages scored\n"
         f"- {flags:,} red flags in total\n\n"
         "Files: `bias_index.sqlite` (the full database the site is built from), `companies.csv` and `pages.csv`. "
         "Answers are red-flag probabilities: 0.8 or more is a red flag, 0.2 or less is a no, anything between is "
@@ -69,7 +69,7 @@ def main():
         "MIT licensed.\n",
         encoding="utf-8",
     )
-    print(f"exported {companies} companies, {scored:,} scored pages to {out}")
+    print(f"exported {companies} companies, {scored:,} compare pages to {out}")
 
 
 if __name__ == "__main__":

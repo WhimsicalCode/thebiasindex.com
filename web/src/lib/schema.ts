@@ -76,8 +76,8 @@ export function companyDataset(company: Company) {
         "Red flags per page",
         company.averageScore === null ? null : Number(company.averageScore.toFixed(2))
       ),
-      value("Pages read", company.scoredPages),
-      value("Pages found", company.candidates),
+      value("Compare pages", company.scoredPages),
+      value("Candidate pages", company.candidates),
       ...QUESTIONS.map((q, i) => ({
         ...value(q.label, company.flags[i] ?? 0),
         description: q.question,

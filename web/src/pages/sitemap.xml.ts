@@ -13,9 +13,12 @@ export const GET: APIRoute = () => {
     ...PAGES,
     ...companies().flatMap(c => {
       const pages = Math.max(1, Math.ceil(c.scoredPages / PAGE_SIZE))
-      return Array.from({ length: pages }, (_, i) =>
-        i === 0 ? companyPath(c) : `${companyPath(c)}/${i + 1}`
-      )
+      return [
+        ...Array.from({ length: pages }, (_, i) =>
+          i === 0 ? companyPath(c) : `${companyPath(c)}/${i + 1}`
+        ),
+        ...(c.candidates > 0 ? [`${companyPath(c)}/candidates`] : []),
+      ]
     }),
   ]
   const urls = paths

@@ -67,15 +67,17 @@ two "cons" for the vendor each followed by "That said…", and three vague cons 
   counts for a company if it is on that company's own hosts; URLs a sitemap lists on other sites, and pages that
   redirect off the company's domains, are never scored under its name.
 - **Discovery:** the sitemaps named in each host's `robots.txt` (else `/sitemap.xml`), followed recursively. A URL is
-  a candidate if its path contains `-vs-`, `/vs/`, `versus`, `alternative`, `compare`, `comparison`, `switch-to` or
+  a *candidate page* if its path contains `-vs-`, `/vs/`, `versus`, `alternative`, `compare`, `comparison`, `switch-to` or
   `/switch`. Known gap: comparison pages without one of these words in the URL are missed. Pages a sitemap leaves
-  out can be added by hand (`linear.app/switch`).
+  out are still found when the company's homepage links to them (its navigation and footer), or can be
+  added by hand (`linear.app/switch`).
 - **Excluded before fetching:** localized paths and sitemaps (`/de/`, `/pt-br/`, `sitemap_fr.xml`), and
   user-generated content or template galleries on vendor domains (Figma Community, Coda's `/@` docs, Prezi
   presentations).
-- **Every candidate is checked,** every week: no sampling, no cap per company. A page found in an earlier week is
-  checked again even if this week's sitemap leaves it out (some sitemaps vary by visitor location); it drops out
-  once the page is gone.
+- **Every candidate is read,** every week, to tell whether it is a *compare page*: one that compares the company
+  with a named rival. Only compare pages are scored. No sampling, no cap per company. A page found in an earlier
+  week is checked again even if this week's sitemap leaves it out (some sitemaps vary by visitor location); it
+  drops out once the page is gone.
 - **Fetching:** as `BiasIndexBot`, honoring `robots.txt`, one request at a time per host and at least a second apart
   (or the site's `Crawl-delay`), asking for English. A host that blocks three requests in a row is marked
   unreachable rather than retried harder. A company whose every page is blocked, or that opts out in `robots.txt`,

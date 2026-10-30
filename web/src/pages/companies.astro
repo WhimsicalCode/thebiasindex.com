@@ -1,6 +1,6 @@
 ---
-// Every company (design/v2/mockups/Companies.dc.html), in one list: everyone with pages read, by total red flags (or
-// per page, or pages read), then everyone without. Ranked companies have a number and their red flags by question;
+// Every company (design/v2/mockups/Companies.dc.html), in one list: everyone with compare pages, by total red flags (or
+// per page, or compare pages), then everyone without. Ranked companies have a number and their red flags by question;
 // the others say why they aren't ranked where the bar would be. Filterable by name or website.
 import FlagBar from "@/components/flag-bar.astro"
 import QuestionLegend from "@/components/question-legend.astro"
@@ -17,11 +17,11 @@ const rows = inListOrder(all).map(c => {
   const status = unrankedStatus(c) ?? ""
   return { c, status, rank: status ? "–" : String(++ranks).padStart(2, "0") }
 })
-const pagesRead = (c: Company) => (c.status === "ok" ? fmt(c.scoredPages) : "–")
+const comparePages = (c: Company) => (c.status === "ok" ? fmt(c.scoredPages) : "–")
 const SORTS = [
   ["total", "Total"],
   ["per", "Per page"],
-  ["pages", "Pages read"],
+  ["pages", "Compare pages"],
 ] as const
 ---
 
@@ -90,7 +90,7 @@ const SORTS = [
                 )}
                 <span class="r-total">{c.scoredPages > 0 ? fmt(c.biasLoad) : "–"}</span>
                 <span class="r-num">{perPage(c)}</span>
-                <span class="r-num">{pagesRead(c)}</span>
+                <span class="r-num">{comparePages(c)}</span>
                 {c.scoredPages > 0 && (
                   <span class="r-meta">
                     {perPage(c)} per page · {fmt(c.scoredPages)} {c.scoredPages === 1 ? "page" : "pages"}
@@ -108,7 +108,7 @@ const SORTS = [
 </BaseLayout>
 
 <script>
-  // Sort by total, per page or pages read, and filter by name or website (?q= from the home page's lookup).
+  // Sort by total, per page or compare pages, and filter by name or website (?q= from the home page's lookup).
   const list = document.querySelector<HTMLOListElement>("ol.rank")
   const rows = [...(list?.querySelectorAll<HTMLLIElement>("li") ?? [])]
   const chips = document.querySelectorAll<HTMLButtonElement>("[data-sort]")
@@ -122,7 +122,7 @@ const SORTS = [
   }
   let sort = "total"
 
-  // Companies with pages read are sorted, fair players included; the ones without stay at the end. Only ranked
+  // Companies with compare pages are sorted, fair players included; the ones without stay at the end. Only ranked
   // companies are numbered.
   const read = rows.filter(row => row.dataset.read !== undefined)
   const rest = rows.filter(row => row.dataset.read === undefined)

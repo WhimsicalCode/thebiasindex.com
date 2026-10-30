@@ -265,7 +265,7 @@ export const PAGE_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 }
 
-/** The ranking: companies with at least 3 scored pages, by total red flags, then by pages read. Fair players (1 red
+/** The ranking: companies with at least 3 scored pages, by total red flags, then by compare pages. Fair players (1 red
  * flag per page or fewer) are left out: a high total from many fair pages isn't a red flag. */
 export function byRedFlags(list: Company[]): Company[] {
   return rankable(list)
@@ -306,7 +306,7 @@ export type FairRow = { company: Company; why: string }
 export function fairTable(list: Company[]): FairRow[] {
   return [
     ...fairPlayers(list).map(company => ({ company, why: "Fair" })),
-    ...silentCompanies(list).map(company => ({ company, why: "No comparison pages" })),
+    ...silentCompanies(list).map(company => ({ company, why: "No compare pages" })),
   ].map(row =>
     row.company.slug === MADE_BY ? { ...row, why: `${row.why}. We made this index.` } : row
   )
@@ -327,7 +327,7 @@ export function notMeasured(list: Company[]): Company[] {
 /** Why a company isn't ranked, in the same four words everywhere, or null when it is ranked. */
 export function unrankedStatus(company: Company): string | null {
   if (company.status !== "ok") return "Not measured yet"
-  if (company.scoredPages === 0) return "No comparison pages"
+  if (company.scoredPages === 0) return "No compare pages"
   if (company.fairPlayer) return "Fair player"
   if (company.scoredPages < MIN_PAGES_FOR_RANKING) return "Too few pages"
   return null

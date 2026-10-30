@@ -1,0 +1,354 @@
+---
+// /<domain>/candidates: every candidate page we found for a company and what the AI found each one to be. Linked
+// from "candidate pages" on the company page; the same list is `other_candidate_pages` in its JSON.
+import BaseLayout from "@/layouts/base-layout.astro"
+import { type Company, companies, companyPath, type Page, pagesFor } from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { fmt } from "@/lib/format"
+import { kindOf, NOT_COMPARE, whatItIs } from "@/lib/report"
+import { REPO_URL } from "@/lib/site"
+
+export function getStaticPaths() {
+  return companies()
+    .filter(company => company.candidates > 0)
+    .map(company => ({ params: { domain: company.slug }, props: { company } }))
+}
+
+// Rows shown before "Show all", as on the company page.
+const SHOWN = 25
+
+const { company } = Astro.props as { company: Company }
+const name = company.company
+const candidates = pagesFor(company.slug)
+const compare = candidates.filter(p => p.pageType === "competitor_comparison")
+const others = candidates.filter(p => p.pageType !== "competitor_comparison")
+const counts = NOT_COMPARE.map(k => ({
+  ...k,
+  count: others.filter(p => kindOf(p) === k.kind).length,
+})).filter(k => k.count > 0)
+const urlOf = (p: Page) => p.url.replace(/^https?:\/\/(www\.)?/, "")
+const plural = (n: number, word: string) => `${fmt(n)} ${word}${n === 1 ? "" : "s"}`
+---
+
+<BaseLayout
+  title={`${name}: ${plural(candidates.length, "candidate page")} · The Bias Index`}
+  description={`Every candidate page on ${name}’s website, and which of them are compare pages.`}
+  section="companies"
+  alternates={[{ href: href(`/${company.slug}.json`), type: "application/json", title: `${name}, as JSON` }]}
+>
+  <main>
+    <section class="wrap">
+      <a class="back" href={href(companyPath(company))}>← {name}</a>
+      <h1 class="display found-h1">{plural(candidates.length, "candidate page")}</h1>
+      <dl class="terms">
+        <dt>Candidate page</dt>
+        <dd>A page on {name}’s website whose address looks like a comparison: “vs”, “alternative”, “compare”, “switch”.</dd>
+        <dt>Compare page</dt>
+        <dd>A candidate page that compares {name} with a named rival. The AI reads every candidate to tell. Only compare pages are scored.</dd>
+      </dl>
+
+      <div class="kinds">
+        <div class="kind">
+          <span>
+            {compare.length > 0 ? <a href={href(companyPath(company))}>Compare pages, scored</a> : "Compare pages, scored"}
+          </span>
+          <b>{fmt(compare.length)}</b>
+        </div>
+        {
+          counts.map(k => (
+            <div class="kind muted">
+              <span>{k.label}</span>
+              <b>{fmt(k.count)}</b>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    {
+      others.length > 0 && (
+        <section class="wrap found-section" data-found>
+          <h2 class="display found-h2">
+            {others.length === 1 ? "The 1 that isn’t a compare page" : `The ${fmt(others.length)} that aren’t compare pages`}
+          </h2>
+          {counts.length > 1 && (
+            <div class="chips" role="group" aria-label="Show pages by what they turned out to be">
+              <button class="chip on" type="button" aria-pressed="true" data-kind="all">
+                All · {fmt(others.length)}
+              </button>
+              {counts.map(k => (
+                <button class="chip" type="button" aria-pressed="false" data-kind={k.kind}>
+                  {k.label} · {fmt(k.count)}
+                </button>
+              ))}
+            </div>
+          )}
+          <div class="found-head" aria-hidden="true">
+            <span>Page</span>
+            <span>What it is</span>
+          </div>
+          {others.map((p, i) => (
+            <div class="found-row" data-kind={kindOf(p)} hidden={i >= SHOWN}>
+              <div class="found-main">
+                <a class="found-title" href={p.url} rel="nofollow noopener">
+                  {p.title || urlOf(p)}
+                </a>
+                <div class="found-url">{urlOf(p)}</div>
+              </div>
+              <span class="found-why">{whatItIs(p)}</span>
+            </div>
+          ))}
+          {others.length > SHOWN && (
+            <button class="found-show" type="button" data-show>
+              Show all {fmt(others.length)} pages
+            </button>
+          )}
+          <noscript>
+            <style>
+              .found-row[hidden] {
+                display: grid !important;
+              }
+              [data-show] {
+                display: none;
+              }
+            </style>
+          </noscript>
+          <p class="muted found-wrong">
+            Think one of these is a compare page after all? <a href={`${REPO_URL}/issues/new`}>Open an issue</a>.
+          </p>
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>
+
+<script>
+  // Filter the pages by what they turned out to be; the first 25 show until "Show all".
+  document.querySelectorAll<HTMLElement>("[data-found]").forEach(section => {
+    const rows = [...section.querySelectorAll<HTMLElement>(".found-row")]
+    const chips = section.querySelectorAll<HTMLButtonElement>("[data-kind].chip")
+    const show = section.querySelector<HTMLButtonElement>("[data-show]")
+    let kind = "all"
+    let expanded = false
+
+    function render() {
+      const matching = rows.filter(row => kind === "all" || row.dataset.kind === kind)
+      rows.forEach(row => {
+        row.hidden = true
+      })
+      matching.forEach((row, i) => {
+        row.hidden = !expanded && i >= 25
+      })
+      if (show) {
+        show.hidden = expanded || matching.length <= 25
+        show.textContent = `Show all ${matching.length.toLocaleString("en-US")} pages`
+      }
+    }
+
+    chips.forEach(chip =>
+      chip.addEventListener("click", () => {
+        kind = chip.dataset.kind ?? "all"
+        expanded = false
+        chips.forEach(other => {
+          other.classList.toggle("on", other === chip)
+          other.setAttribute("aria-pressed", String(other === chip))
+        })
+        render()
+      })
+    )
+    show?.addEventListener("click", () => {
+      expanded = true
+      render()
+    })
+  })
+</script>
+
+<style lang="scss">
+  .back {
+    display: inline-block;
+    margin-top: 32px;
+    font-size: 14px;
+  }
+
+  .found-h1 {
+    font-size: 96px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 20px 0 0;
+  }
+
+  .terms {
+    margin: 32px 0 0;
+    max-width: 64ch;
+  }
+
+  .terms dt {
+    font-weight: 700;
+    color: #1a1630;
+  }
+
+  .terms dd {
+    margin: 2px 0 14px;
+  }
+
+  .kinds {
+    margin-top: 48px;
+    border-top: 1px solid #1a1630;
+    max-width: 640px;
+  }
+
+  .kind {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid #e6e3ec;
+    font-size: 15px;
+  }
+
+  .kind b {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: #1a1630;
+  }
+
+  .found-section {
+    padding-top: 96px;
+  }
+
+  .found-h2 {
+    font-size: 48px;
+    line-height: 1;
+    margin: 0 0 32px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid #d9d6e0;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: #1a1630;
+  }
+
+  .chip.on {
+    background: #1a1630;
+    color: #fff;
+    border-color: #1a1630;
+  }
+
+  .found-head,
+  .found-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    gap: 24px;
+  }
+
+  .found-head {
+    margin-top: 28px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1630;
+    font-size: 12px;
+    color: #5f5a72;
+  }
+
+  .found-row {
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e6e3ec;
+  }
+
+  .found-row[hidden] {
+    display: none;
+  }
+
+  .found-title {
+    font-size: 15px;
+    line-height: 1.4;
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .found-title:hover {
+    text-decoration: underline;
+  }
+
+  .found-url {
+    font-size: 12px;
+    color: #5f5a72;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .found-why {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .found-show {
+    margin-top: 28px;
+    height: 52px;
+    padding: 0 24px;
+    border-radius: 10px;
+    border: 1.5px solid #1a1630;
+    background: #fff;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  .found-wrong {
+    margin-top: 40px;
+    font-size: 14px;
+  }
+
+  @container page (max-width: 760px) {
+    .back {
+      margin-top: 12px;
+    }
+
+    .found-h1 {
+      font-size: 56px;
+    }
+
+    .found-section {
+      padding-top: 64px;
+    }
+
+    .found-h2 {
+      font-size: 34px;
+    }
+
+    .found-head {
+      display: none;
+    }
+
+    .found-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
+
+    .found-url {
+      white-space: normal;
+      word-break: break-all;
+    }
+  }
+</style>

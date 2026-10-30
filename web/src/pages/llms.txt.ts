@@ -25,7 +25,9 @@ Latest run: ${run ? `${longDate(run.startedAt)} (${run.startedAt.slice(0, 10)})`
 
 ## The five questions
 
-Asked of every page that compares a company's product with a named rival. Every "yes" is a red flag.
+A candidate page is a page on a company's website whose address looks like a comparison ("vs", "alternative",
+"compare", "switch"). A compare page is a candidate page that compares the company with a named rival; the AI reads
+every candidate to tell. Only compare pages are scored, with five yes/no questions. Every "yes" is a red flag.
 
 ${QUESTIONS.map((q, i) => `${i + 1}. ${q.label}: ${q.question}`).join("\n")}
 
@@ -33,16 +35,16 @@ ${RULES_TEXT}
 
 ## Statuses
 
-- Ranked: at least ${RULES.MIN_PAGES_FOR_RANKING} pages read and more than ${RULES.FAIR_AVERAGE} red flag per page. Ranked by total red flags, then pages read.
-- Fair player: at least ${RULES.MIN_PAGES_FOR_RANKING} pages read, ${RULES.FAIR_AVERAGE} red flag per page or fewer. Not ranked.
-- Too few pages: fewer than ${RULES.MIN_PAGES_FOR_RANKING} pages read, so one page would decide everything. Not ranked.
-- No comparison pages: no page compares the company with a named rival. Not ranked, and not penalised.
+- Ranked: at least ${RULES.MIN_PAGES_FOR_RANKING} compare pages and more than ${RULES.FAIR_AVERAGE} red flag per page. Ranked by total red flags, then compare pages.
+- Fair player: at least ${RULES.MIN_PAGES_FOR_RANKING} compare pages, ${RULES.FAIR_AVERAGE} red flag per page or fewer. Not ranked.
+- Too few pages: fewer than ${RULES.MIN_PAGES_FOR_RANKING} compare pages, so one page would decide everything. Not ranked.
+- No compare pages: none of the company's candidate pages compares it with a named rival. Not ranked, and not penalised.
 - Not measured yet: our crawler is blocked, or we can't read the company's sitemaps.
 
 ## Look a company up by its domain
 
 - Page: ${SITE}/<domain>, e.g. ${SITE}/clickup.com
-- Data: ${SITE}/<domain>.json, e.g. ${SITE}/clickup.com.json (every page we read and its five answers)
+- Data: ${SITE}/<domain>.json, e.g. ${SITE}/clickup.com.json (every compare page and its five answers; other_candidate_pages lists the candidate pages that aren't compare pages, and what each one is)
 - All companies: ${SITE}/companies.json
 - How it works: ${absoluteUrl("/methodology")}
 - Weekly dataset (SQLite and CSV, MIT): ${REPO_URL}/releases/latest
