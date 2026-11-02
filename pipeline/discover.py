@@ -12,7 +12,7 @@ import html
 import re
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urldefrag, urljoin, urlparse
 
@@ -57,14 +57,25 @@ def is_english_path(url):
 
 def dedupe_regional(urls):
     """Regional copies count once: URLs that differ only by a locale as the first path segment (zoho.com/ae/...,
-    workday.com/en-gb/...) are one page, and the shortest URL is kept."""
-    groups = defaultdict(list)
+    workday.com/en-gb/...) are one page, and the shortest URL is kept.
+
+    A first segment that looks like a locale is only dropped when the rest of the path is also published without
+    it, or under another locale: short section names look like locales too (notion.com/lp/..., miro.com/al/...)."""
+    split = {}
     for url in urls:
         parts = urlparse(url)
-        segments = [s for s in parts.path.split("/") if s]
+        split[url] = (parts.netloc, [s for s in parts.path.split("/") if s])
+    paths = {(host, "/".join(segments)) for host, segments in split.values()}
+    localized = Counter((host, "/".join(segments[1:])) for host, segments in split.values()
+                        if segments and segments[0] != "vs" and LOCALE_SEGMENT.match(segments[0]))
+    groups = defaultdict(list)
+    for url, (host, segments) in split.items():
+        path = "/".join(segments)
         if segments and segments[0] != "vs" and LOCALE_SEGMENT.match(segments[0]):
-            segments = segments[1:]
-        groups[(parts.netloc, "/".join(segments))].append(url)
+            rest = "/".join(segments[1:])
+            if (host, rest) in paths or localized[(host, rest)] > 1:
+                path = rest
+        groups[(host, path)].append(url)
     return sorted(min(group, key=lambda url: (len(url), url)) for group in groups.values())
 
 
