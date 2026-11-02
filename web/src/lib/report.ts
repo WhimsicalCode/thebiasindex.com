@@ -6,6 +6,7 @@ import {
   companies,
   companyPath,
   latestRun,
+  mentionsFor,
   notMeasured,
   type Page,
   pagesFor,
@@ -116,6 +117,22 @@ export function verdictOf(company: Company): Verdict {
   }
 }
 
+/** Everyone against the company in one sentence, or "" when no other company's page is aimed at it. */
+export function againstOf(company: Company): string {
+  const name = company.company
+  const { aimedAt, aimedAtPages } = mentionsFor(company.slug)
+  if (aimedAtPages === 0) return ""
+  const own =
+    company.scoredPages > 0
+      ? `${name} has ${fmt(company.scoredPages)} compare ${company.scoredPages === 1 ? "page" : "pages"} of its own.`
+      : `${name} has no compare pages of its own.`
+  return (
+    `${fmt(aimedAtPages)} ${aimedAtPages === 1 ? "page" : "pages"} on ${fmt(aimedAt.length)} ` +
+    `${aimedAt.length === 1 ? "company’s site is" : "companies’ sites are"} written for people looking at ` +
+    `${name}: “${name} alternatives”, “X vs ${name}”. ${own}`
+  )
+}
+
 /** The verdict as one paragraph: the meta description, /<domain>.json and llms.txt. */
 export function summaryOf(company: Company): string {
   const { headline, found, total } = verdictOf(company)
@@ -138,6 +155,7 @@ export function reportOf(company: Company) {
   const pages = candidates.filter(p => p.pageType === "competitor_comparison")
   const others = candidates.filter(p => p.pageType !== "competitor_comparison")
   const checked = company.status === "ok"
+  const mentions = mentionsFor(company.slug)
   return {
     domain: company.slug,
     company: company.company,
@@ -170,8 +188,35 @@ export function reportOf(company: Company) {
       type: kindOf(p),
       what_it_is: whatItIs(p),
     })),
+    // Other companies' compare pages aimed at this one ("X alternatives", "Y vs X"), and this one's aimed back.
+    everyone_against: {
+      summary: againstOf(company) || null,
+      pages: mentions.aimedAtPages,
+      companies: mentions.aimedAt.length,
+      red_flags_per_page: round(mentions.aimedAtAverage),
+      // Pages where it is one entry in a list: counted, but their red flags may be about the other entries.
+      listed_in_pages: mentions.listedIn,
+      by_company: mentions.aimedAt.map(row => ({
+        domain: row.company.slug,
+        company: row.company.company,
+        url: absoluteUrl(companyPath(row.company)),
+        pages: row.pages.length,
+        red_flags_per_page: round(row.averageScore),
+        pages_aimed_back: row.back,
+        page_list: row.pages.map(p => ({ url: p.url, title: p.title, red_flags: p.score })),
+      })),
+    },
+    // The companies this one's own compare pages are aimed at.
+    aims_at: mentions.aimsAt.map(row => ({
+      domain: row.company.slug,
+      company: row.company.company,
+      url: absoluteUrl(companyPath(row.company)),
+      pages: row.pages,
+    })),
   }
 }
+
+const round = (n: number | null) => (n === null ? null : Number(n.toFixed(2)))
 
 /** The rules, stated once for JSON and llms.txt. */
 export const RULES_TEXT =

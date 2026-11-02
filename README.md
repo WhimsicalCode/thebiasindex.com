@@ -38,8 +38,8 @@ players (1 red flag per page or fewer, across at least 3 pages) aren't ranked; t
 
 | | |
 |---|---|
-| `thebiasindex.com/<domain>` | The company page, e.g. [`/clickup.com`](https://thebiasindex.com/clickup.com) |
-| `thebiasindex.com/<domain>.json` | The same numbers as data, with every scored page and its five answers |
+| `thebiasindex.com/<domain>` | The company page, e.g. [`/clickup.com`](https://thebiasindex.com/clickup.com), with "Everyone against" it: the other companies' pages aimed at it ([how](docs/METHODOLOGY.md#who-writes-about-whom)) |
+| `thebiasindex.com/<domain>.json` | The same numbers as data, with every scored page and its five answers, and the pages aimed at it |
 | `thebiasindex.com/companies.json` | Every company |
 | `thebiasindex.com/llms.txt` | What the index is and how to read it, for assistants |
 
@@ -60,13 +60,15 @@ Reproduce the published table without any API key: `uv run pipeline/consolidated
 ## Open data
 
 Every weekly run is published as a [release](https://github.com/WhimsicalCode/thebiasindex.com/releases/latest): the SQLite database the site is built from, plus
-`companies.csv` (one row per company) and `pages.csv` (every candidate page, with the five answers of each compare
-page as red-flag probabilities). The latest is always at
+`companies.csv` (one row per company), `pages.csv` (every candidate page, with the five answers of each compare
+page as red-flag probabilities) and `mentions.csv` (the companies each compare page is aimed at or lists). The latest
+is always at
 
 ```
 https://github.com/WhimsicalCode/thebiasindex.com/releases/latest/download/bias_index.sqlite
 https://github.com/WhimsicalCode/thebiasindex.com/releases/latest/download/companies.csv
 https://github.com/WhimsicalCode/thebiasindex.com/releases/latest/download/pages.csv
+https://github.com/WhimsicalCode/thebiasindex.com/releases/latest/download/mentions.csv
 ```
 
 Older weeks stay available: the last 8 weekly releases, then one per month.

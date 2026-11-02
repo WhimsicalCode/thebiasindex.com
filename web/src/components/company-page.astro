@@ -7,9 +7,11 @@ import BaseLayout from "@/layouts/base-layout.astro"
 import {
   type Company,
   companies,
+  companyHref,
   companyPath,
   latestRun,
   longDate,
+  mentionsFor,
   type Page,
   pagesFor,
   QUESTIONS,
@@ -18,13 +20,15 @@ import {
 } from "@/lib/db"
 import { href } from "@/lib/deploy"
 import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
-import { standingOf, summaryOf, verdictOf } from "@/lib/report"
+import { againstOf, standingOf, summaryOf, verdictOf } from "@/lib/report"
 import { companyDataset } from "@/lib/schema"
 import { REPO_URL } from "@/lib/site"
 
 export const PAGE_SIZE = 100
 // Rows shown before "Show all", as in the mockup.
 const SHOWN = 25
+// Companies shown in "Everyone against" before "Show all".
+const AGAINST_SHOWN = 10
 
 type Props = { company: Company; page: number }
 const { company, page } = Astro.props
@@ -43,6 +47,12 @@ const facts = [
   { value: perPage(company), label: "red flags per page" },
   { value: ok ? fmt(company.scoredPages) : "–", label: "compare pages" },
 ]
+
+// Everyone against the company: other companies' compare pages aimed at it, and how many of its own are aimed back.
+const mentions = mentionsFor(company.slug)
+const against = mentions.aimedAt
+const againstMax = Math.max(1, ...against.map(row => row.pages.length))
+const perPageOf = (n: number | null) => (n === null ? "–" : n.toFixed(1))
 
 // Where the company stands, and the verdict (shared with its JSON, llms.txt and the share image).
 const standing = standingOf(company)
@@ -122,6 +132,14 @@ const ANSWER = {
             </div>
           )
         }
+        {
+          mentions.aimedAtPages > 0 && (
+            <a class="fact fact-link" href="#against">
+              <b style={inkEnd(fmt(mentions.aimedAtPages), "Dinsical")}>{fmt(mentions.aimedAtPages)}</b>
+              <span style={inkEnd("↓", "Monsical")}>pages aimed at {name} ↓</span>
+            </a>
+          )
+        }
       </div>
 
       {company.biasLoad > 0 && <FlagSplit company={company} />}
@@ -138,6 +156,111 @@ const ANSWER = {
             </p>
           </div>
           <ScatterChart companies={scoredCompanies(all)} highlight={company} />
+          {mentions.aimsAt.length > 0 && (
+            <div class="aims">
+              <span class="muted">{name}’s pages are aimed at</span>
+              {mentions.aimsAt.map(row => (
+                <a class="aim" href={`${companyHref(row.company)}#against`}>
+                  {row.company.company} <b>{fmt(row.pages)}</b>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+      )
+    }
+
+    {
+      against.length > 0 && (
+        <section class="wrap section" id="against" data-against>
+          <div class="section-head">
+            <h2 class="display h2">Everyone against {name}</h2>
+            <p class="muted">{againstOf(company)}</p>
+          </div>
+          {company.averageScore !== null && (
+            <div class="mirror">
+              <div>
+                <b>{perPage(company)}</b>
+                <span>red flags per page when {name} writes about others</span>
+              </div>
+              <div>
+                <b>{perPageOf(mentions.aimedAtAverage)}</b>
+                <span>red flags per page when others write about {name}</span>
+              </div>
+            </div>
+          )}
+          <div class="chips" role="group" aria-label="Sort companies">
+            <button class="chip on" type="button" aria-pressed="true" data-sort="pages">
+              Most pages
+            </button>
+            <button class="chip" type="button" aria-pressed="false" data-sort="per">
+              Most red flags per page
+            </button>
+          </div>
+          <div class="ledger-head" aria-hidden="true">
+            <span>Company</span>
+            <span>Their pages about {name}</span>
+            <span style="text-align: right">Red flags per page</span>
+            <span style="text-align: right">{name}’s pages about them</span>
+          </div>
+          <div class="ledger">
+            {against.map((row, i) => (
+              <details
+                class="ledger-row"
+                data-pages={row.pages.length}
+                data-per={row.averageScore}
+                hidden={i >= AGAINST_SHOWN}
+              >
+                <summary>
+                  <span class="l-name">
+                    <a href={companyHref(row.company)}>{row.company.company}</a>
+                  </span>
+                  <span class="l-bar">
+                    <i style={`width: ${((row.pages.length / againstMax) * 100).toFixed(2)}%`} />
+                    <b>{fmt(row.pages.length)}</b>
+                  </span>
+                  <span class="l-num">{perPageOf(row.averageScore)}</span>
+                  <span class:list={["l-num", "l-back", { none: row.back === 0 }]}>{fmt(row.back)}</span>
+                </summary>
+                <div class="l-pages">
+                  {row.pages.map(p => (
+                    <div class="row">
+                      <div class="row-main">
+                        <a class="row-title" href={p.url} rel="nofollow noopener">
+                          {p.title || urlOf(p)}
+                        </a>
+                        <div class="row-url">{urlOf(p)}</div>
+                      </div>
+                      <div class="ans" role="img" aria-label={summary(p)}>
+                        {p.answers.map((answer, q) => (
+                          <i
+                            class:list={["a", { [`y${q + 1}`]: answer === "flag" }]}
+                            data-label={QUESTIONS[q].label}
+                            data-value={ANSWER[answer]}
+                            data-question={QUESTIONS[q].question}
+                            data-color={QUESTIONS[q].color}
+                          />
+                        ))}
+                      </div>
+                      <span class="score">{p.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+          {against.length > AGAINST_SHOWN && (
+            <button class="show" type="button" data-show-against>
+              Show all {fmt(against.length)} companies
+            </button>
+          )}
+          {mentions.listedIn > 0 && (
+            <p class="muted listed">
+              {name} is also listed as one option in {fmt(mentions.listedIn)} other compare
+              {mentions.listedIn === 1 ? " page" : " pages"}. Their red flags may be about the other options, so
+              they aren’t counted here.
+            </p>
+          )}
         </section>
       )
     }
@@ -288,6 +411,42 @@ const ANSWER = {
     show?.addEventListener("click", () => {
       expanded = true
       render()
+    })
+  })
+
+  // Everyone against the company: sort by pages or red flags per page; the first 10 companies show until "Show all".
+  document.querySelectorAll<HTMLElement>("[data-against]").forEach(section => {
+    const ledger = section.querySelector<HTMLElement>(".ledger")
+    const rows = [...section.querySelectorAll<HTMLDetailsElement>(".ledger-row")]
+    const chips = section.querySelectorAll<HTMLButtonElement>("[data-sort]")
+    const show = section.querySelector<HTMLButtonElement>("[data-show-against]")
+    const value = (row: HTMLElement, key: string) => Number(row.dataset[key])
+    let expanded = false
+
+    function render(sort: string) {
+      const other = sort === "pages" ? "per" : "pages"
+      rows.sort((a, b) => value(b, sort) - value(a, sort) || value(b, other) - value(a, other))
+      ledger?.replaceChildren(...rows)
+      rows.forEach((row, i) => {
+        row.hidden = !expanded && i >= 10
+      })
+    }
+
+    chips.forEach(chip =>
+      chip.addEventListener("click", () => {
+        chips.forEach(other => {
+          other.classList.toggle("on", other === chip)
+          other.setAttribute("aria-pressed", String(other === chip))
+        })
+        render(chip.dataset.sort ?? "pages")
+      })
+    )
+    show?.addEventListener("click", () => {
+      expanded = true
+      show.hidden = true
+      rows.forEach(row => {
+        row.hidden = false
+      })
     })
   })
 </script>
@@ -601,6 +760,176 @@ const ANSWER = {
     font-size: 14px;
   }
 
+  // The companies a company's own pages are aimed at, under its chart (not in the mockup).
+  .aims {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-top: 28px;
+    font-size: 14px;
+  }
+
+  .aims .muted {
+    margin-right: 6px;
+  }
+
+  .aim {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1.5px solid #d9d6e0;
+    border-radius: 999px;
+    text-decoration: none;
+    color: #1a1630;
+  }
+
+  .aim:hover {
+    border-color: #1a1630;
+  }
+
+  .aim b {
+    font-family: "Monsical", ui-monospace, monospace;
+  }
+
+  // Everyone against the company (not in the mockup): how both sides write, then one row per company.
+  .mirror {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+    border-top: 1px solid #1a1630;
+  }
+
+  .mirror div {
+    padding-top: 20px;
+  }
+
+  .mirror b {
+    display: block;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 48px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .mirror span {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .ledger-head,
+  .ledger-row summary {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr) 140px 240px;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .ledger-head {
+    margin-top: 28px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1630;
+    font-size: 12px;
+    color: #5f5a72;
+  }
+
+  .ledger-row {
+    border-bottom: 1px solid #e6e3ec;
+  }
+
+  .ledger-row[hidden] {
+    display: none;
+  }
+
+  .ledger-row summary {
+    padding: 14px 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .ledger-row summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .l-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.015em;
+  }
+
+  .l-name::before {
+    content: "+";
+    width: 14px;
+    font-family: "Monsical", ui-monospace, monospace;
+    font-weight: 400;
+    color: #5f5a72;
+  }
+
+  .ledger-row[open] .l-name::before {
+    content: "–";
+  }
+
+  .l-name a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .l-name a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .l-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .l-bar i {
+    display: block;
+    height: 14px;
+    min-width: 3px;
+    border-radius: 3px;
+    background: #1a1630;
+  }
+
+  .l-bar b,
+  .l-num {
+    font-family: "Monsical", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .l-num {
+    text-align: right;
+  }
+
+  .l-back.none {
+    color: #b8b4c4;
+  }
+
+  .l-pages {
+    padding: 0 0 16px 24px;
+  }
+
+  .l-pages .row:last-child {
+    border-bottom: 0;
+  }
+
+  .listed {
+    margin: 28px 0 0;
+    max-width: 72ch;
+  }
+
   .take {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -740,6 +1069,44 @@ const ANSWER = {
     .a {
       width: 16px;
       height: 16px;
+    }
+
+    .mirror b {
+      font-size: 34px;
+    }
+
+    .ledger-head {
+      display: none;
+    }
+
+    .ledger-row summary {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px 16px;
+    }
+
+    .l-bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .l-num::after {
+      font-family: "Monsical", ui-monospace, monospace;
+      font-weight: 400;
+      font-size: 11px;
+      color: #5f5a72;
+      margin-left: 4px;
+    }
+
+    .ledger-row summary .l-num:not(.l-back)::after {
+      content: "per page";
+    }
+
+    .l-back::after {
+      content: "back";
+    }
+
+    .l-pages {
+      padding-left: 0;
     }
 
     // Pages 101 and up are on /<domain>/2, /3… (not in the mockup).

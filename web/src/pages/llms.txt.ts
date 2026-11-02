@@ -1,9 +1,17 @@
 // /llms.txt (llmstxt.org): what the site is, the five questions, how to look a company up by domain, and every
 // company in one line, in the order of /companies and in the same words as its page.
 import type { APIRoute } from "astro"
-import { companies, latestRun, longDate, QUESTIONS, RULES, unrankedStatus } from "@/lib/db"
+import {
+  companies,
+  latestRun,
+  longDate,
+  mentionsFor,
+  QUESTIONS,
+  RULES,
+  unrankedStatus,
+} from "@/lib/db"
 import { absoluteUrl } from "@/lib/deploy"
-import { inListOrder, RULES_TEXT, standingOf, summaryOf } from "@/lib/report"
+import { againstOf, inListOrder, RULES_TEXT, standingOf, summaryOf } from "@/lib/report"
 import { REPO_URL } from "@/lib/site"
 
 const SITE = absoluteUrl("/").replace(/\/$/, "")
@@ -13,7 +21,12 @@ export const GET: APIRoute = () => {
   const run = latestRun()
   const lines = inListOrder(companies()).map(c => {
     const standing = unrankedStatus(c) ? standingOf(c) : `Ranked ${standingOf(c)} red flags`
-    return `- [${c.company} (${c.slug})](${page(c.slug)}): ${standing}. ${summaryOf(c)}`
+    const { aimedAtAverage } = mentionsFor(c.slug)
+    const against =
+      aimedAtAverage === null
+        ? ""
+        : ` ${againstOf(c)} The pages aimed at ${c.company} average ${aimedAtAverage.toFixed(1)} red flags per page.`
+    return `- [${c.company} (${c.slug})](${page(c.slug)}): ${standing}. ${summaryOf(c)}${against}`
   })
   const text = `# The Bias Index (thebiasindex.com)
 
@@ -41,10 +54,18 @@ ${RULES_TEXT}
 - No compare pages: none of the company's candidate pages compares it with a named rival. Not ranked, and not penalised.
 - Not measured yet: our crawler is blocked, or we can't read the company's sitemaps.
 
+## Who writes about whom
+
+A compare page is aimed at a company when one of its product names sits next to "vs", "alternative" or "compare" in
+the page's address or title ("Notion alternatives", "Miro vs Notion"). Its red flags then count on the company's page
+under "Everyone against", with how many of the company's own pages are aimed back. A company is listed in a page when
+a heading of the page's list starts with its name ("3. Notion"): counted, but without the red flags, which may be
+about the other entries. Only monitored companies are matched, and the page body isn't read.
+
 ## Look a company up by its domain
 
 - Page: ${SITE}/<domain>, e.g. ${SITE}/clickup.com
-- Data: ${SITE}/<domain>.json, e.g. ${SITE}/clickup.com.json (every compare page and its five answers; other_candidate_pages lists the candidate pages that aren't compare pages, and what each one is)
+- Data: ${SITE}/<domain>.json, e.g. ${SITE}/clickup.com.json (every compare page and its five answers; other_candidate_pages lists the candidate pages that aren't compare pages, and what each one is; everyone_against lists the other companies' pages aimed at it, by company; aims_at lists the companies its own pages are aimed at)
 - All companies: ${SITE}/companies.json
 - How it works: ${absoluteUrl("/methodology")}
 - Weekly dataset (SQLite and CSV, MIT): ${REPO_URL}/releases/latest

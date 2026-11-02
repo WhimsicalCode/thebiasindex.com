@@ -114,6 +114,33 @@ two "cons" for the vendor each followed by "That said…", and three vague cons 
   score), and whether the page grades a competitor on things outside its category. Comparison tables drawn with icons
   only come through as empty cells. These are known gaps.
 
+## Who writes about whom
+
+Each company page also shows **Everyone against** the company: the other companies' compare pages written for
+people looking at it. No AI is involved; the rules read the page's address, title and headings
+([`pipeline/mentions.py`](../pipeline/mentions.py)).
+
+- **Aimed at:** one of the company's product names sits next to "vs", "versus", "alternative(s)", "compare",
+  "comparison" or "competitors" in the page's address or title, or follows "switch from" or "migrate from"
+  (`/whimsical-alternatives`, "Miro vs Notion"). A page can be aimed at several companies ("Monday vs Asana vs
+  ClickUp"). The page's red flags count on the company's page, next to how many of its own pages are aimed back.
+- **Listed:** a heading of the page starts with the company's name, as an entry of a list: numbered ("3. Notion"),
+  followed by a separator ("Notion: best for wikis"), or on its own. Counted, without the page's red flags, which may
+  be about the other entries. Headings that are other articles' titles ("Monday vs ClickUp: which should you pick?")
+  and the site's template (an unnumbered heading on a quarter or more of the company's compare pages) are skipped.
+- **Names** are the `product_names` of the monitored companies in
+  [`pipeline/domains.yml`](../pipeline/domains.yml); a company's own pages never count for it. Other products whose
+  name contains one ("Resource Guru", "Figma Make") are listed under `not_mentions`, and a name two companies share is
+  skipped.
+- **The body of the page isn't read.** There, names are mostly navigation, integrations and customer stories, so a
+  rival mentioned only in a paragraph doesn't count.
+- **The red flags are the page's,** not a judgement of what it says about that one rival: "Admits no weakness" is
+  about the publisher itself.
+
+Checked by hand on 400 random compare pages: 1 of 429 matches was wrong (99.8%), and about 98% of the monitored
+rivals named in an address, title or list heading were found. The misses are entries written in prose ("Best for
+infographics - Venngage") and products not in `product_names`.
+
 ## How reliable is it
 
 Every methodology version is tested against labeled pages before it scores anything. The full log, failures

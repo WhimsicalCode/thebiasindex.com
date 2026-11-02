@@ -242,7 +242,11 @@ function queryPages(slug: string): Page[] {
        order by case when page_type = 'competitor_comparison' then 0 else 1 end, score desc, url`
     )
     .all(slug) as Record<string, string | number | null>[]
-  return rows.map(row => ({
+  return rows.map(toPage)
+}
+
+function toPage(row: Record<string, string | number | null>): Page {
+  return {
     url: String(row.url),
     title: row.title ? String(row.title) : null,
     pageType: row.page_type ? String(row.page_type) : null,
@@ -252,7 +256,88 @@ function queryPages(slug: string): Page[] {
     answers: QUESTIONS.map(q =>
       answerFor(row[q.key as QuestionKey] === null ? null : Number(row[q.key as QuestionKey]))
     ),
-  }))
+  }
+}
+
+/** Another company's compare pages aimed at this one, and how many of this one's pages are aimed back at it. */
+export type AimedAt = { company: Company; pages: Page[]; averageScore: number; back: number }
+
+export type Mentions = {
+  /** Companies whose compare pages are aimed at this one ("Notion alternatives", "X vs Notion"), most pages first. */
+  aimedAt: AimedAt[]
+  /** Those pages together: how many, and their red flags per page. */
+  aimedAtPages: number
+  aimedAtAverage: number | null
+  /** Other companies' compare pages where this one is one entry in a list. Their red flags aren't counted for it. */
+  listedIn: number
+  /** Companies this one's compare pages are aimed at, most pages first. */
+  aimsAt: { company: Company; pages: number }[]
+}
+
+/** Who aims at whom, from pipeline/mentions.py. Empty for databases from before mentions were recorded. */
+export function mentionsFor(slug: string): Mentions {
+  return cached(`mentions:${slug}`, () => queryMentions(slug))
+}
+
+function queryMentions(slug: string): Mentions {
+  const empty = { aimedAt: [], aimedAtPages: 0, aimedAtAverage: null, listedIn: 0, aimsAt: [] }
+  const hasMentions = open()
+    .prepare("select 1 from sqlite_master where type = 'table' and name = 'mentions'")
+    .get()
+  if (!hasMentions) return empty
+  const bySlug = new Map(companies().map(c => [c.slug, c]))
+  // Current compare pages only, by companies on the site.
+  const current = `pages.page_type = 'competitor_comparison' and pages.${currentPagesWhere()}`
+  const pairs = (
+    open()
+      .prepare(
+        `select m.company_slug as publisher, m.mentioned_slug as mentioned, m.kind as kind, count(*) as n
+         from mentions m join pages on pages.url = m.url
+         where (m.company_slug = ? or m.mentioned_slug = ?) and ${current}
+         group by 1, 2, 3`
+      )
+      .all(slug, slug) as { publisher: string; mentioned: string; kind: string; n: number }[]
+  ).filter(pair => bySlug.has(pair.publisher) && bySlug.has(pair.mentioned))
+  const back = (publisher: string) =>
+    pairs.find(p => p.publisher === slug && p.mentioned === publisher && p.kind === "about")?.n ?? 0
+  const rows = open()
+    .prepare(
+      `select m.company_slug as publisher, pages.url, pages.title, pages.page_type, pages.score, pages.unclear,
+         pages.skip_reason, ${QUESTIONS.map(q => `pages.${q.key}`).join(", ")}
+       from mentions m join pages on pages.url = m.url
+       where m.mentioned_slug = ? and m.kind = 'about' and ${current}
+       order by pages.score desc, pages.url`
+    )
+    .all(slug) as Record<string, string | number | null>[]
+  const pagesBy = new Map<string, Page[]>()
+  for (const row of rows) {
+    const publisher = String(row.publisher)
+    if (!bySlug.has(publisher)) continue
+    pagesBy.set(publisher, [...(pagesBy.get(publisher) ?? []), toPage(row)])
+  }
+  const average = (pages: Page[]) =>
+    pages.reduce((sum, p) => sum + (p.score ?? 0), 0) / Math.max(1, pages.length)
+  const aimedAt = [...pagesBy]
+    .map(([publisher, pages]) => ({
+      company: bySlug.get(publisher) as Company,
+      pages,
+      averageScore: average(pages),
+      back: back(publisher),
+    }))
+    .sort((a, b) => b.pages.length - a.pages.length || b.averageScore - a.averageScore)
+  const all = aimedAt.flatMap(row => row.pages)
+  return {
+    aimedAt,
+    aimedAtPages: all.length,
+    aimedAtAverage: all.length ? average(all) : null,
+    listedIn: pairs
+      .filter(p => p.mentioned === slug && p.kind === "listed")
+      .reduce((sum, p) => sum + p.n, 0),
+    aimsAt: pairs
+      .filter(p => p.publisher === slug && p.kind === "about")
+      .map(p => ({ company: bySlug.get(p.mentioned) as Company, pages: p.n }))
+      .sort((a, b) => b.pages - a.pages || a.company.company.localeCompare(b.company.company)),
+  }
 }
 
 export const RULES = { RED_FLAG, OK, MIN_PAGES_FOR_RANKING, FAIR_AVERAGE }
