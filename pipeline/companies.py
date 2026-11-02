@@ -22,11 +22,11 @@ import yaml
 
 PATH = Path(__file__).resolve().parent / "domains.yml"
 DOMAIN = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
-CATEGORIES = {"ai_research", "ai_tools", "automation", "crm", "design_prototyping", "developer_tools",
-              "diagramming_whiteboards", "docs_wikis_knowledge", "email_marketing", "finance_accounting",
-              "forms_surveys", "help_desk", "hr",
-              "mind_mapping", "notes", "presentations", "product_analytics", "project_management", "scheduling",
-              "video", "website_builders"}
+CATEGORIES = {"ai_research", "ai_tools", "automation", "communication", "crm", "data_analytics", "data_infrastructure",
+              "design_prototyping", "developer_tools", "diagramming_whiteboards", "docs_wikis_knowledge", "ecommerce",
+              "email_marketing", "finance_accounting", "forms_surveys", "help_desk", "hr", "mind_mapping", "notes",
+              "presentations", "product_analytics", "project_management", "scheduling", "security", "video",
+              "website_builders"}
 
 
 def _within(host, domain):

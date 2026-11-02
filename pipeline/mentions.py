@@ -128,7 +128,7 @@ def title_parts(title, excluded):
     parts = []
     for part in TITLE_PARTS.split(title or ""):
         for phrase in excluded:
-            part = part.replace(phrase, " ")
+            part = re.sub(re.escape(phrase), " ", part, flags=re.IGNORECASE)
         parts.append(part)
     return parts
 
@@ -166,7 +166,7 @@ def match_page(publisher, url, title, headings, names, template=frozenset()):
         if excluded not in views:
             tokens = url_words(url, [slug_words(phrase) for phrase in excluded])
             views[excluded] = (tokens, " ".join(tokens), title_parts(title, excluded),
-                               [h for h in headings if not any(phrase in h for phrase in excluded)])
+                               [h for h in headings if not any(p.lower() in h.lower() for p in excluded)])
         return views[excluded]
 
     found = {}
@@ -217,7 +217,8 @@ CASES = [
     ("visme.co", "https://visme.co/blog/interactive-flipbook-alternatives/", "Flipbook Alternatives",
      ["Advantage #1: Non-Linear Navigation", "Pricing", "Features"], {}),
     ("hiverhq.com", "https://hiverhq.com/blog/helpscout-vs-intercom", "Help Scout vs Intercom: Feature Comparison",
-     ["Jira Service Management vs. Freshdesk: Which Is Right for Your Team?"], {"intercom.com": "about"}),
+     ["Jira Service Management vs. Freshdesk: Which Is Right for Your Team?"],
+     {"helpscout.com": "about", "intercom.com": "about"}),
     ("loom.com", "https://www.loom.com/comparison/loom-vs-vidyard",
      "Loom vs. Vidyard: Which Is the Best Teamwork Tool? | Loom", [], {}),
     ("clickup.com", "https://clickup.com/blog/linting-and-formatting-with-eslint-in-vs-code/",

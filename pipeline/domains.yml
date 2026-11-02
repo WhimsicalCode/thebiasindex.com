@@ -772,7 +772,7 @@
 - company: Atlassian
   domain: atlassian.com
   category: project_management
-  product_names: [Atlassian, Jira, Confluence]
+  product_names: [Atlassian, Jira, Confluence, Bitbucket]
   hosts: [www.atlassian.com]
 - company: Bitrix24
   domain: bitrix24.com
@@ -857,3 +857,220 @@
   category: hr
   product_names: [Workday]
   hosts: [www.workday.com]
+- company: Slack
+  domain: slack.com
+  category: communication
+  product_names: [Slack]
+  hosts: [slack.com]
+  sitemaps: [https://slack.com/sitemaps/sitemap_en-us.xml]  # its en-gb and en-in sitemaps repeat every page under /intl/
+# Added 2026-11-02.
+- company: Shopify
+  domain: shopify.com
+  category: ecommerce
+  product_names: [Shopify]
+  hosts: [www.shopify.com]
+- company: Base44
+  domain: base44.com
+  category: ai_tools
+  product_names: [Base44]
+  hosts: [base44.com]
+- company: ServiceNow
+  domain: servicenow.com
+  category: help_desk
+  product_names: [ServiceNow]
+  hosts: [www.servicenow.com]
+- company: Gorgias
+  domain: gorgias.com
+  category: help_desk
+  product_names: [Gorgias]
+  hosts: [www.gorgias.com]
+- company: Zoom
+  domain: zoom.com
+  category: communication
+  aliases: [zoom.us]
+  product_names: [Zoom]
+  hosts: [www.zoom.com]
+- company: Bubble
+  domain: bubble.io
+  category: website_builders
+  product_names: [Bubble]
+  hosts: [bubble.io]
+  sitemaps: [https://bubble.io/sitemap.xml, https://bubble.io/blog/sitemap.xml]  # robots.txt also lists forum.bubble.io and manual.bubble.io
+- company: Bolt
+  domain: bolt.new
+  category: ai_tools
+  product_names: [Bolt, Bolt.new]
+  hosts: [bolt.new]
+  sitemaps: [https://bolt.new/sitemap.xml, https://bolt.new/cms/sitemap.xml]  # robots.txt also lists support.bolt.new
+- company: Twilio
+  domain: twilio.com
+  category: communication
+  aliases: [sendgrid.com]
+  product_names: [Twilio, SendGrid, Twilio SendGrid, Segment]
+  hosts: [www.twilio.com]  # sendgrid.com redirects to twilio.com/en-us/sendgrid
+- company: Help Scout
+  domain: helpscout.com
+  category: help_desk
+  product_names: [Help Scout, HelpScout]
+  hosts: [www.helpscout.com]
+- company: Glean
+  domain: glean.com
+  category: docs_wikis_knowledge
+  product_names: [Glean]
+  hosts: [www.glean.com]
+- company: Windsurf
+  domain: windsurf.com
+  category: developer_tools
+  product_names: [Windsurf, Devin]
+  hosts: [windsurf.com, devin.ai]
+  sitemaps: [https://devin.ai/sitemap-index.xml]  # windsurf.com redirects to devin.ai (Cognition)
+- company: Render
+  domain: render.com
+  category: developer_tools
+  product_names: [Render]
+  hosts: [render.com]
+- company: Hex
+  domain: hex.tech
+  category: data_analytics
+  product_names: [Hex]
+  hosts: [hex.tech]
+- company: Metabase
+  domain: metabase.com
+  category: data_analytics
+  product_names: [Metabase]
+  hosts: [www.metabase.com]
+- company: Evidence
+  domain: evidence.dev
+  category: data_analytics
+  product_names: [Evidence, Evidence.dev]
+  not_mentions: [Open Evidence]
+  hosts: [evidence.dev]
+- company: ClickHouse
+  domain: clickhouse.com
+  category: data_infrastructure
+  product_names: [ClickHouse]
+  hosts: [clickhouse.com]
+- company: Clay
+  domain: clay.com
+  category: crm
+  product_names: [Clay]
+  hosts: [www.clay.com]
+- company: Hightouch
+  domain: hightouch.com
+  category: data_infrastructure
+  product_names: [Hightouch]
+  hosts: [hightouch.com]
+- company: Fivetran
+  domain: fivetran.com
+  category: data_infrastructure
+  aliases: [getcensus.com]
+  product_names: [Fivetran, Census]
+  hosts: [www.fivetran.com]  # getcensus.com redirects here since the acquisition
+- company: Databricks
+  domain: databricks.com
+  category: data_infrastructure
+  product_names: [Databricks]
+  hosts: [www.databricks.com]
+- company: Rippling
+  domain: rippling.com
+  category: hr
+  product_names: [Rippling]
+  hosts: [www.rippling.com]
+- company: Ramp
+  domain: ramp.com
+  category: finance_accounting
+  product_names: [Ramp]
+  hosts: [ramp.com]
+- company: Stripe
+  domain: stripe.com
+  category: finance_accounting
+  product_names: [Stripe]
+  hosts: [stripe.com]
+- company: Sentry
+  domain: sentry.io
+  category: developer_tools
+  product_names: [Sentry]
+  hosts: [sentry.io]
+- company: turbopuffer
+  domain: turbopuffer.com
+  category: data_infrastructure
+  product_names: [turbopuffer]
+  hosts: [turbopuffer.com]
+- company: Remote
+  domain: remote.com
+  category: hr
+  product_names: [Remote]
+  not_mentions: [Remote Work, Remote Working, Remote Teams, Remote Desktop, Remote PC, Remote Support, Remote Access,
+                 Remote Development]
+  hosts: [remote.com]
+- company: Deel
+  domain: deel.com
+  category: hr
+  product_names: [Deel]
+  hosts: [www.deel.com]
+- company: Lattice
+  domain: lattice.com
+  category: hr
+  product_names: [Lattice]
+  hosts: [lattice.com]
+- company: PayFit
+  domain: payfit.com
+  category: hr
+  product_names: [PayFit]
+  hosts: [payfit.com]
+- company: GitLab
+  domain: gitlab.com
+  category: developer_tools
+  product_names: [GitLab]
+  hosts: [about.gitlab.com]  # gitlab.com itself is the app
+- company: GitHub
+  domain: github.com
+  category: developer_tools
+  product_names: [GitHub, GitHub Copilot]
+  hosts: [github.com]
+  sitemaps: [https://github.com/sitemap_marketing.xml]  # the marketing pages; the rest is user content
+- company: Superhuman
+  domain: superhuman.com
+  category: communication
+  product_names: [Superhuman]
+  hosts: [superhuman.com]
+- company: folk
+  domain: folk.app
+  category: crm
+  product_names: [folk]
+  hosts: [www.folk.app]
+- company: Aircall
+  domain: aircall.io
+  category: communication
+  product_names: [Aircall]
+  hosts: [aircall.io]
+- company: Carta
+  domain: carta.com
+  category: finance_accounting
+  product_names: [Carta]
+  hosts: [carta.com]
+- company: Algolia
+  domain: algolia.com
+  category: developer_tools
+  product_names: [Algolia]
+  hosts: [www.algolia.com]
+- company: Gusto
+  domain: gusto.com
+  category: hr
+  product_names: [Gusto]
+  hosts: [gusto.com]
+- company: Preset
+  domain: preset.io
+  category: data_analytics
+  product_names: [Preset]
+  hosts: [preset.io]
+- company: Gong
+  domain: gong.io
+  category: crm
+  product_names: [Gong]
+  hosts: [www.gong.io]
+- company: Dashlane
+  domain: dashlane.com
+  category: security
+  product_names: [Dashlane]
+  hosts: [www.dashlane.com]
