@@ -128,7 +128,7 @@ const SORTS = [
   let sort = "total"
 
   // Companies with compare pages are sorted, fair players included; the ones without stay at the end. Only ranked
-  // companies are numbered.
+  // companies are numbered, before filtering, so a company keeps its rank when it's found.
   const read = rows.filter(row => row.dataset.read !== undefined)
   const rest = rows.filter(row => row.dataset.read === undefined)
 
@@ -138,7 +138,7 @@ const SORTS = [
     for (const row of ordered) row.hidden = query !== "" && !(row.dataset.find ?? "").includes(query)
     list?.replaceChildren(...ordered)
     ordered
-      .filter(row => !row.hidden && row.dataset.ranked !== undefined)
+      .filter(row => row.dataset.ranked !== undefined)
       .forEach((row, i) => {
         const no = row.querySelector(".r-no")
         if (no) no.textContent = String(i + 1).padStart(2, "0")
@@ -166,6 +166,14 @@ const SORTS = [
     })
   )
   find?.addEventListener("input", render)
+  // Cmd/Ctrl+F finds a company instead of searching the page.
+  document.addEventListener("keydown", event => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f" && find) {
+      event.preventDefault()
+      find.focus()
+      find.select()
+    }
+  })
   const q = new URLSearchParams(location.search).get("q")
   if (find && q) {
     find.value = q.replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").replace(/[/?#].*$/, "")
