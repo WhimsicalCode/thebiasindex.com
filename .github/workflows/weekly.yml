@@ -56,7 +56,7 @@ jobs:
         run: |
           uv run pipeline/export.py
           day="$(date -u +%Y-%m-%d)"
-          files="data/bias_index.sqlite data/export/companies.csv data/export/pages.csv"
+          files="data/bias_index.sqlite data/export/companies.csv data/export/pages.csv data/export/mentions.csv"
           if gh release view "data-$day" > /dev/null 2>&1; then
             gh release upload "data-$day" $files --clobber
             gh release edit "data-$day" --notes-file data/export/release-notes.md

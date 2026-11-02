@@ -3,7 +3,8 @@
 Usage: uv run pipeline/export.py [--db data/bias_index.sqlite] [--out data/export]
 
 Writes OUT/companies.csv (one row per monitored company), OUT/pages.csv (every candidate page ever checked, with a
-`current` column for pages seen in the company's latest run) and OUT/release-notes.md. Answers are red-flag
+`current` column for pages seen in the company's latest run), OUT/mentions.csv (the companies each compare page is
+aimed at or lists, pipeline/mentions.py) and OUT/release-notes.md. Answers are red-flag
 probabilities: 0.8 or more is a red flag, 0.2 or less is a no, anything between is unclear (docs/METHODOLOGY.md).
 """
 
@@ -50,6 +51,11 @@ def main():
                p.methodology, p.model, p.classified_at
         from pages p order by p.company_slug, p.url"""))
 
+    write_csv(out / "mentions.csv", db.execute(f"""
+        select m.company_slug as domain, m.url, m.mentioned_slug as mentioned_domain, m.kind, m.matched_in,
+               m.matched_text, {CURRENT} as current
+        from mentions m join pages p on p.url = m.url order by m.company_slug, m.url, m.mentioned_slug"""))
+
     run = db.execute("select started_at, methodology, model from runs where finished_at is not null "
                      "order by run_id desc limit 1").fetchone()
     companies, scored, flags = db.execute(f"""
@@ -62,7 +68,8 @@ def main():
         f"Weekly run of {run[0][:10]}, methodology {run[1]} ({run[2]}).\n\n"
         f"- {companies} companies monitored\n- {scored:,} compare pages scored\n"
         f"- {flags:,} red flags in total\n\n"
-        "Files: `bias_index.sqlite` (the full database the site is built from), `companies.csv` and `pages.csv`. "
+        "Files: `bias_index.sqlite` (the full database the site is built from), `companies.csv`, `pages.csv` and "
+        "`mentions.csv` (the companies each compare page is aimed at, `about`, or lists, `listed`). "
         "Answers are red-flag probabilities: 0.8 or more is a red flag, 0.2 or less is a no, anything between is "
         "unclear. How pages are found and scored: "
         "[docs/METHODOLOGY.md](https://github.com/WhimsicalCode/thebiasindex.com/blob/main/docs/METHODOLOGY.md). "

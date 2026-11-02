@@ -13,6 +13,8 @@ Usage: uv run pipeline/run.py [--db data/bias_index.sqlite] [--raw data/raw/live
 - A page is only sent to Luna when its text or the methodology version changed since the last run.
 - Non-English pages (by <html lang>), near-empty pages and pages that redirect off the company's domains are
   stored but never scored.
+- Last, mentions.py records which companies each compare page is aimed at or lists, from its URL, title and
+  headings (no AI).
 
 Needs OPENAI_API_KEY (see credentials.py). Raw HTML and text stay under --raw and are not committed.
 """
@@ -39,6 +41,7 @@ import classify  # noqa: E402
 import companies  # noqa: E402
 import discover  # noqa: E402
 import fetch_pages  # noqa: E402
+import mentions  # noqa: E402
 from credentials import openai_api_key  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -94,6 +97,9 @@ create table if not exists pages (
     model text,
     classified_at text
 );
+-- "Current pages" (seen in the company's latest run) are looked up by company and last_seen everywhere: the export,
+-- mentions.csv and the site's build. Without it, each lookup scans the whole table.
+create index if not exists pages_company_seen on pages(company_slug, last_seen);
 create table if not exists runs (
     run_id integer primary key autoincrement,
     started_at text not null,
@@ -197,6 +203,7 @@ def main():
 
     db = sqlite3.connect(args.db)
     db.executescript(SCHEMA)
+    mentions.ensure_schema(db)
     columns = {row[1] for row in db.execute("pragma table_info(companies)")}
     if "aliases" not in columns:
         db.execute("alter table companies add column aliases text not null default '[]'")
@@ -309,14 +316,15 @@ def main():
                               (page["url"],)).fetchone()
         db.execute(
             """insert into pages (url, page_id, company_slug, title, lang, http_status, final_url, text_hash,
-                 text_chars, first_seen, last_seen, skip_reason)
-               values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 text_chars, first_seen, last_seen, skip_reason, headings)
+               values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                on conflict(url) do update set title = excluded.title, lang = excluded.lang,
                  http_status = excluded.http_status, final_url = excluded.final_url,
                  text_hash = excluded.text_hash, text_chars = excluded.text_chars, last_seen = excluded.last_seen,
-                 skip_reason = excluded.skip_reason""",
+                 skip_reason = excluded.skip_reason, headings = excluded.headings""",
             (page["url"], page["page_id"], slug, result["title"], result["lang"], result["status"] or None,
-             result["final_url"], text_hash, len(text), previous[2] if previous else started, started, skip),
+             result["final_url"], text_hash, len(text), previous[2] if previous else started, started, skip,
+             None if skip else json.dumps(mentions.list_headings(text))),
         )
         if skip:
             db.execute(f"update pages set {', '.join(f'{column} = null' for column in CLASSIFICATION)} where url = ?",
@@ -372,6 +380,11 @@ def main():
             classified += 1
             if classified % 200 == 0:
                 db.commit()  # a crash late in a long run keeps what was already scored
+    # Headings are only used to find the companies a compare page lists.
+    db.execute("update pages set headings = null where page_type is not 'competitor_comparison'")
+    db.commit()
+    compare_pages, about, listed = mentions.rebuild(db, entries if not only else None)
+    print(f"mentions: {compare_pages:,} compare pages, {about:,} about a company, {listed:,} listing one", flush=True)
     db.execute(
         """update runs set finished_at = ?, companies = ?, pages_fetched = ?, pages_classified = ?,
              pages_reused = ?, input_tokens = ? where run_id = ?""",
