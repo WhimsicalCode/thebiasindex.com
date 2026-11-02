@@ -148,14 +148,14 @@ ASSET = re.compile(r"\.(?:css|js|json|xml|png|jpe?g|gif|svg|webp|ico|pdf|zip|mp4
 def homepage_links(client, entry):
     """Comparison-style links on the company's homepage (its navigation and footer). Sitemaps sometimes leave
     these out (mermaid.ai/comparison/...), yet they are the comparisons a company features most. One request;
-    query strings (tracking parameters) are dropped."""
+    query strings (tracking parameters) are dropped. None when the homepage can't be read."""
     host = entry["hosts"][0]
     try:
         response = client.get(f"https://{host}/")
     except httpx.HTTPError:
-        return set()
+        return None
     if response.status_code != 200:
-        return set()
+        return None
     links = set()
     for href in HREF.findall(response.text[:2_000_000]):
         url = urldefrag(urljoin(str(response.url), html.unescape(href).strip()))[0].split("?")[0]
@@ -169,7 +169,7 @@ def homepage_links(client, entry):
 def merge_links(sitemap_urls, links):
     """Homepage links not already listed in a sitemap (ignoring a trailing slash)."""
     listed = {url.rstrip("/") for url in sitemap_urls}
-    return {url for url in links if url.rstrip("/") not in listed}
+    return {url for url in links or () if url.rstrip("/") not in listed}
 
 
 def discover_company(client, entry):

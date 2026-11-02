@@ -80,7 +80,7 @@ export function verdictOf(company: Company): Verdict {
   if (company.status !== "ok")
     return {
       headline: `We can’t read ${name}’s pages yet.`,
-      found: `We can’t read ${name}’s sitemaps, so we haven’t found its candidate pages.`,
+      found: `We can’t read ${name}’s sitemaps or homepage, so we haven’t found its candidate pages.`,
       total: "",
     }
   if (company.scoredPages === 0)

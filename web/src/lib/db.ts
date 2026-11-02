@@ -405,7 +405,7 @@ export function silentCompanies(list: Company[]): Company[] {
     .sort((a, b) => a.company.localeCompare(b.company))
 }
 
-/** Companies we can't measure yet (blocked crawler, unreadable sitemaps), A to Z. */
+/** Companies we can't measure yet (blocked crawler, neither sitemaps nor homepage readable), A to Z. */
 export function notMeasured(list: Company[]): Company[] {
   return list.filter(c => c.status !== "ok").sort((a, b) => a.company.localeCompare(b.company))
 }

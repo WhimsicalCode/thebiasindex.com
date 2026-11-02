@@ -70,7 +70,9 @@ two "cons" for the vendor each followed by "That said…", and three vague cons 
   a *candidate page* if its path contains `-vs-`, `/vs/`, `versus`, `alternative`, `compare`, `comparison`, `switch-to` or
   `/switch`. Known gap: comparison pages without one of these words in the URL are missed. Pages a sitemap leaves
   out are still found when the company's homepage links to them (its navigation and footer), or can be
-  added by hand (`linear.app/switch`).
+  added by hand (`linear.app/switch`). A company with no sitemap whose homepage links to no comparison (Obsidian)
+  publishes no compare pages we can find: a company that has some features them there. It's shown as "No compare
+  pages", not ranked and not penalised.
 - **Excluded before fetching:** localized paths and sitemaps (`/de/`, `/pt-br/`, `sitemap_fr.xml`), and
   user-generated content or template galleries on vendor domains (Figma Community, Coda's `/@` docs, Prezi
   presentations).

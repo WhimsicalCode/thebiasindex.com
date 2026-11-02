@@ -5,7 +5,8 @@ Usage: uv run pipeline/run.py [--db data/bias_index.sqlite] [--raw data/raw/live
 
 - Companies come from pipeline/domains.yml, validated by companies.py; each is keyed by its domain. Candidate URLs
   come from their sitemaps (discover.py), minus user-generated content, non-English paths and URLs on hosts the
-  company doesn't own. A company whose sitemaps can't be read is marked no_sitemap.
+  company doesn't own. A company with no readable sitemap is marked no_sitemap, unless its homepage could be read:
+  then it publishes no compare pages we can find (if it had some, its navigation or footer would link to them).
 - --max-pages-per-company keeps a run small: a stable sample (by URL hash) so the same pages come back each week.
   The number of candidates found is always stored, so the site can say "40 of 1,496 pages scored".
 - Pages are fetched politely (fetch_pages.py): one request per second per host, robots.txt honored, hosts that keep
@@ -130,7 +131,7 @@ def stable_sample(urls, limit):
 
 
 def discover_entry(client, entry):
-    """Candidate URLs for one company, plus how many sitemap URLs were read in total."""
+    """Candidate URLs for one company, how many sitemap URLs were read in total, and whether its homepage was read."""
     user_content = re.compile(discover.USER_CONTENT)
     total, urls = 0, set()
     for name in entry["hosts"]:
@@ -138,18 +139,19 @@ def discover_entry(client, entry):
         total += len(found)
         urls |= {url for url in found
                  if discover.CANDIDATE.search(urlparse(url).path) and discover.is_english_path(url)}
-    from_homepage = discover.merge_links(urls, discover.homepage_links(client, entry))
+    homepage = discover.homepage_links(client, entry)
+    from_homepage = discover.merge_links(urls, homepage)
     urls |= from_homepage | set(entry.get("extra_urls", []))
     foreign = {url for url in urls if not companies.owns(entry, url)}
     urls = sorted(url for url in urls - foreign if not user_content.search(url))
     dropped = f" dropped {len(foreign)} on other hosts" if foreign else ""
     linked = f" ({len(from_homepage)} from the homepage)" if from_homepage else ""
     print(f"{entry['company']:<14} sitemap urls={total:<8} candidates={len(urls)}{linked}{dropped}", flush=True)
-    return total, urls
+    return total, urls, homepage is not None
 
 
 def discover_all(entries):
-    """Per company: (sitemap URLs read, filtered candidate URLs)."""
+    """Per company: (sitemap URLs read, filtered candidate URLs, whether its homepage was read)."""
     with httpx.Client(headers=fetch_pages.HEADERS, timeout=20, follow_redirects=True) as client, \
             ThreadPoolExecutor(min(32, len(entries))) as pool:
         found = list(pool.map(lambda entry: discover_entry(client, entry), entries))
@@ -226,7 +228,7 @@ def main():
     pages, company_for = [], {}
     for entry in entries:
         slug = entry["domain"]
-        sitemap_urls, urls = candidates[entry["company"]]
+        sitemap_urls, urls, read_homepage = candidates[entry["company"]]
         # Pages found in earlier weeks are checked again even when this week's sitemap leaves them out (some sitemaps
         # vary by visitor location). A page drops out once it's gone (a 404 or 410) or excluded since it was first seen.
         excluded = re.compile(discover.USER_CONTENT)
@@ -238,7 +240,7 @@ def main():
             print(f"{entry['company']:<14} +{added} known pages not in this week's sitemap", flush=True)
         urls = discover.dedupe_regional(set(urls) | known)
         sample = stable_sample(urls, args.max_pages_per_company)
-        status = "no_sitemap" if sitemap_urls == 0 and not urls else "ok"
+        status = "no_sitemap" if sitemap_urls == 0 and not urls and not read_homepage else "ok"
         db.execute(
             """insert into companies (slug, company, hosts, aliases, category, product_names, candidates, sampled,
                  status, updated_at)

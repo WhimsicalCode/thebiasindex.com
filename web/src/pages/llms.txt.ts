@@ -51,8 +51,8 @@ ${RULES_TEXT}
 - Ranked: at least ${RULES.MIN_PAGES_FOR_RANKING} compare pages and more than ${RULES.FAIR_AVERAGE} red flag per page. Ranked by total red flags, then compare pages.
 - Fair player: at least ${RULES.MIN_PAGES_FOR_RANKING} compare pages, ${RULES.FAIR_AVERAGE} red flag per page or fewer. Not ranked.
 - Too few pages: fewer than ${RULES.MIN_PAGES_FOR_RANKING} compare pages, so one page would decide everything. Not ranked.
-- No compare pages: none of the company's candidate pages compares it with a named rival. Not ranked, and not penalised.
-- Not measured yet: our crawler is blocked, or we can't read the company's sitemaps.
+- No compare pages: none of the company's candidate pages (if it has any) compares it with a named rival. Not ranked, and not penalised.
+- Not measured yet: our crawler is blocked, or we can read neither the company's sitemaps nor its homepage.
 
 ## Who writes about whom
 
