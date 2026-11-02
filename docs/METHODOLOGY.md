@@ -86,7 +86,10 @@ two "cons" for the vendor each followed by "That said…", and three vague cons 
   shows as "crawler blocked", with no score. Details for site owners: [`/bot`](https://thebiasindex.com/bot).
 - **Scored only if** the page answers HTTP 200, its `<html lang>` is English (or missing), at most 30% of the
   letters in its text are non-Latin (pages tagged English but written in Japanese, say), and it has at least 200
-  characters of text. Everything else is stored with the reason and shown as not scored.
+  characters of text that aren't the site's template: the same text, under 1,000 characters, on 5 or more of the
+  company's pages (DigitalOcean's tutorials load their article with JavaScript, so the crawler only sees the footer).
+  Everything else is stored with the reason and shown as not scored, and a page scored in an earlier week loses that
+  score until it can be read again.
 - **Text:** the page's `<main>`, else its largest `<article>`, else `<body>`, without navigation, footer, scripts and
   forms, as Markdown, up to 120,000 characters (about 30k tokens). A generic extractor (trafilatura) was tried
   first and dropped whole comparison tables.

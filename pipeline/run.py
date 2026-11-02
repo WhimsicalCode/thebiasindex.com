@@ -26,7 +26,7 @@ import sqlite3
 import sys
 import time
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
@@ -43,6 +43,13 @@ from credentials import openai_api_key  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 MIN_TEXT_CHARS = 200
+# Short text shared word for word by many of a company's pages is its site template, not the page: DigitalOcean's
+# tutorials load their article with JavaScript, so without it every one of them reads as the same footer.
+TEMPLATE_MAX_CHARS, TEMPLATE_MIN_PAGES = 1000, 5
+# Cleared when a page is skipped, so a page that can't be read this week doesn't keep counting with an old score.
+CLASSIFICATION = ("page_type", "page_type_confidence", "p_best_at_everything", "p_no_honest_exit",
+                  "p_no_admitted_weakness", "p_vague_attacks", "p_uneven_scrutiny", "score", "unclear",
+                  "methodology", "model", "classified_at")
 # A company whose every page fails with one of these is marked unreachable ("crawler blocked" on the site),
 # including a robots.txt opt-out: we don't score what we couldn't read.
 BLOCKED_ERRORS = ("blocked", "host blocked the crawler", "disallowed by robots.txt")
@@ -259,6 +266,15 @@ def main():
         if total and blocked == total:
             db.execute("update companies set status = 'unreachable' where slug = ?", (slug,))
 
+    shared = Counter()
+    for page in pages:
+        result = fetched[page["page_id"]]
+        text_path = raw_dir / "text" / f"{page['page_id']}.md"
+        if not result["error"] and result["status"] == 200 and text_path.exists():
+            text = text_path.read_text(encoding="utf-8")
+            if MIN_TEXT_CHARS <= len(text) < TEMPLATE_MAX_CHARS:
+                shared[(company_for[page["page_id"]][0], text)] += 1
+
     products = classify.load_products()
     to_classify, reused = [], 0
     for page in pages:
@@ -286,6 +302,8 @@ def main():
             skip = "not English (text)"
         elif len(text) < MIN_TEXT_CHARS:
             skip = "no readable text"
+        elif (copies := shared[(slug, text)]) >= TEMPLATE_MIN_PAGES:
+            skip = f"only the site's template (the same text on {copies} pages)"
 
         previous = db.execute("select text_hash, methodology, first_seen from pages where url = ?",
                               (page["url"],)).fetchone()
@@ -301,6 +319,8 @@ def main():
              result["final_url"], text_hash, len(text), previous[2] if previous else started, started, skip),
         )
         if skip:
+            db.execute(f"update pages set {', '.join(f'{column} = null' for column in CLASSIFICATION)} where url = ?",
+                       (page["url"],))
             continue
         if previous and previous[0] == text_hash and previous[1] == classify.METHODOLOGY_VERSION:
             reused += 1
