@@ -20,7 +20,7 @@ import {
   unrankedStatus,
 } from "@/lib/db"
 import { href } from "@/lib/deploy"
-import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
+import { fmt, inkEnd, perPage } from "@/lib/format"
 import { againstOf, listedOf, standingOf, summaryOf, verdictOf } from "@/lib/report"
 import { companyDataset } from "@/lib/schema"
 import { REPO_URL } from "@/lib/site"
@@ -273,7 +273,7 @@ const ANSWER = {
         <section class="wrap section" data-pages>
           <div class="section-head">
             <h2 class="display h2">All {fmt(scored.length)} pages</h2>
-            <p class="muted">A filled dot is a red flag. Open a page to read it yourself.</p>
+            <p class="muted">A filled dot is a red flag. Open a page to read it.</p>
           </div>
           <div class="pages-controls">
             <div class="chips" role="group" aria-label="Show pages by number of red flags">
@@ -284,7 +284,7 @@ const ANSWER = {
                 .filter(({ count }) => count > 0)
                 .map(({ n, count }) => (
                   <button class="chip" type="button" aria-pressed="false" data-flags={n}>
-                    {redFlags(n)} · {fmt(count)}
+                    {fmt(n)} {n === 1 ? "flag" : "flags"} · {fmt(count)}
                   </button>
                 ))}
             </div>
