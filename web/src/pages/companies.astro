@@ -2,6 +2,7 @@
 // Every company (design/v2/mockups/Companies.dc.html), in one list: everyone with compare pages, by total red flags (or
 // per page, or compare pages), then everyone without. Ranked companies have a number and their red flags by question;
 // the others say why they aren't ranked where the bar would be. Filterable by name or website.
+import FindInput from "@/components/find-input.astro"
 import FlagBar from "@/components/flag-bar.astro"
 import QuestionLegend from "@/components/question-legend.astro"
 import BaseLayout from "@/layouts/base-layout.astro"
@@ -52,10 +53,7 @@ const SORTS = [
             ))
           }
         </div>
-        <div class="filter">
-          <label for="find">Find a company</label>
-          <input id="find" type="text" placeholder="Name or website" autocomplete="off" spellcheck="false" />
-        </div>
+        <FindInput id="find" label="Find a company" placeholder="Name or website" />
       </div>
 
       <div class="rhead" aria-hidden="true">
@@ -269,29 +267,6 @@ const SORTS = [
     border-color: #1a1630;
   }
 
-  .filter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .filter label {
-    font-size: 13px;
-    color: #5f5a72;
-  }
-
-  .filter input {
-    height: 44px;
-    width: 240px;
-    border: 1.5px solid #d9d6e0;
-    border-radius: 10px;
-    padding: 0 14px;
-    font: inherit;
-    font-size: 14px;
-    color: #1a1630;
-    background: #fff;
-  }
-
   .rank {
     list-style: none;
     margin: 0;
@@ -422,16 +397,6 @@ const SORTS = [
     .chip {
       padding: 0 14px;
       font-size: 13px;
-    }
-
-    .filter {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-    }
-
-    .filter input {
-      width: 100%;
     }
 
     .rhead {

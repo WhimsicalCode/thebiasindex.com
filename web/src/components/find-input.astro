@@ -1,0 +1,48 @@
+---
+// A labelled text box that filters a list as you type, on /companies (companies) and on company pages (their pages).
+// The page's own script listens to the input.
+type Props = { id: string; label: string; placeholder: string }
+const { id, label, placeholder } = Astro.props
+---
+
+<div class="filter">
+  <label for={id}>{label}</label>
+  <input id={id} type="text" placeholder={placeholder} autocomplete="off" spellcheck="false" />
+</div>
+
+<style lang="scss" is:global>
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .filter label {
+    font-size: 13px;
+    color: #5f5a72;
+  }
+
+  .filter input {
+    height: 44px;
+    width: 240px;
+    border: 1.5px solid #d9d6e0;
+    border-radius: 10px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1630;
+    background: #fff;
+  }
+
+  @container page (max-width: 760px) {
+    .filter {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .filter input {
+      width: 100%;
+    }
+  }
+</style>

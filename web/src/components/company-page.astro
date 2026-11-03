@@ -1,6 +1,7 @@
 ---
 // Company page at /<domain> (design/v2/mockups/Company.dc.html), so anyone, an LLM included, can look a company up
 // by its domain. Scored pages are listed 100 at a time: /clickup.com, then /clickup.com/2, /clickup.com/3…
+import FindInput from "@/components/find-input.astro"
 import FlagSplit from "@/components/flag-split.astro"
 import ScatterChart from "@/components/scatter-chart.astro"
 import BaseLayout from "@/layouts/base-layout.astro"
@@ -274,17 +275,20 @@ const ANSWER = {
             <h2 class="display h2">All {fmt(scored.length)} pages</h2>
             <p class="muted">A filled dot is a red flag. Open a page to read it yourself.</p>
           </div>
-          <div class="chips" role="group" aria-label="Show pages by number of red flags">
-            <button class="chip on" type="button" aria-pressed="true" data-flags="all">
-              {allLabel}
-            </button>
-            {counts
-              .filter(({ count }) => count > 0)
-              .map(({ n, count }) => (
-                <button class="chip" type="button" aria-pressed="false" data-flags={n}>
-                  {redFlags(n)} · {fmt(count)}
-                </button>
-              ))}
+          <div class="pages-controls">
+            <div class="chips" role="group" aria-label="Show pages by number of red flags">
+              <button class="chip on" type="button" aria-pressed="true" data-flags="all">
+                {allLabel}
+              </button>
+              {counts
+                .filter(({ count }) => count > 0)
+                .map(({ n, count }) => (
+                  <button class="chip" type="button" aria-pressed="false" data-flags={n}>
+                    {redFlags(n)} · {fmt(count)}
+                  </button>
+                ))}
+            </div>
+            <FindInput id="find-page" label="Find a page" placeholder="Title or address" />
           </div>
           <div class="rows-head" aria-hidden="true">
             <span>Page</span>
@@ -292,7 +296,12 @@ const ANSWER = {
             <span style="text-align: right">Flags</span>
           </div>
           {shown.map((p, i) => (
-            <div class="row" data-score={p.score} hidden={i >= SHOWN}>
+            <div
+              class="row"
+              data-score={p.score}
+              data-find={`${p.title ?? ""} ${urlOf(p)}`.toLowerCase()}
+              hidden={i >= SHOWN}
+            >
               <div class="row-main">
                 <a class="row-title" href={p.url} rel="nofollow noopener">
                   {p.title || urlOf(p)}
@@ -313,6 +322,7 @@ const ANSWER = {
               <span class="score">{p.score}</span>
             </div>
           ))}
+          <p class="muted empty-pages" data-empty hidden />
           {shown.length > SHOWN && (
             <button class="show" type="button" data-show>
               Show all {fmt(shown.length)} pages
@@ -377,27 +387,42 @@ const ANSWER = {
 <script>
   import "@/lib/segment-tip"
 
-  // Filter the pages by number of red flags; the first 25 show until "Show all".
+  // Filter the pages by number of red flags and by title or address; the first 25 show until "Show all", every match
+  // while searching.
   document.querySelectorAll<HTMLElement>("[data-pages]").forEach(section => {
     const rows = [...section.querySelectorAll<HTMLElement>(".row")]
     const chips = section.querySelectorAll<HTMLButtonElement>("[data-flags]")
     const show = section.querySelector<HTMLButtonElement>("[data-show]")
+    const find = section.querySelector<HTMLInputElement>("#find-page")
+    const empty = section.querySelector<HTMLElement>("[data-empty]")
     let flags = "all"
     let expanded = false
 
     function render() {
-      const matching = rows.filter(row => flags === "all" || row.dataset.score === flags)
+      const query = (find?.value ?? "").trim().toLowerCase()
+      const matching = rows.filter(
+        row =>
+          (flags === "all" || row.dataset.score === flags) &&
+          (query === "" || (row.dataset.find ?? "").includes(query))
+      )
+      const all = expanded || query !== ""
       rows.forEach(row => {
         row.hidden = true
       })
       matching.forEach((row, i) => {
-        row.hidden = !expanded && i >= 25
+        row.hidden = !all && i >= 25
       })
       if (show) {
-        show.hidden = expanded || matching.length <= 25
+        show.hidden = all || matching.length <= 25
         show.textContent = `Show all ${matching.length.toLocaleString("en-US")} pages`
       }
+      if (empty) {
+        empty.hidden = matching.length > 0
+        empty.textContent = `No page matches “${find?.value.trim()}”.`
+      }
     }
+
+    find?.addEventListener("input", render)
 
     chips.forEach(chip =>
       chip.addEventListener("click", () => {
@@ -760,6 +785,19 @@ const ANSWER = {
     gap: 8px 28px;
     margin-top: 28px;
     font-size: 14px;
+  }
+
+  // The red-flag chips and the search above the pages, on one row.
+  .pages-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .empty-pages {
+    margin: 28px 0 0;
   }
 
   // The companies a company's own pages are aimed at, under its chart (not in the mockup).
