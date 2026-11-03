@@ -1185,3 +1185,25 @@
   category: communication
   product_names: [Whereby]
   hosts: [whereby.com]
+- company: Granola
+  domain: granola.ai
+  category: meeting_notes
+  aliases: [granola.so]  # redirects here
+  product_names: [Granola]
+  hosts: [www.granola.ai]
+- company: tl;dv
+  domain: tldv.io
+  category: meeting_notes
+  product_names: [tl;dv, tldv]
+  hosts: [tldv.io]
+- company: Fathom
+  domain: fathom.ai
+  category: meeting_notes
+  aliases: [fathom.video]  # redirects here
+  product_names: [Fathom AI, Fathom Video]  # a bare "Fathom" is as often Fathom Analytics (usefathom.com)
+  hosts: [www.fathom.ai]
+- company: Otter.ai
+  domain: otter.ai
+  category: meeting_notes
+  product_names: [Otter, Otter.ai]
+  hosts: [otter.ai]
