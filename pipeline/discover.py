@@ -40,8 +40,8 @@ LANGUAGES = set(
     "ar bg cs da de el es et fa fi fr he hi hr hu id it ja ko lt lv ms nb nl no pl pt ro ru sk sl sr sv "
     "th tr uk vi zh".split()
 )
-# A whole path segment such as de, pt-br or zh_hant, anywhere in the path (/blog/de/..., /hc/es/...).
-LOCALE_SEGMENT = re.compile(r"^([a-z]{2})(?:[-_][a-z]{2,4})?$", re.IGNORECASE)
+# A whole path segment such as de, pt-br, zh_hant or zh-hans-cn, anywhere in the path (/blog/de/..., /hc/es/...).
+LOCALE_SEGMENT = re.compile(r"^([a-z]{2})(?:[-_][a-z]{4})?(?:[-_][a-z]{2,4})?$", re.IGNORECASE)
 # sitemap_de.xml, sitemap-zh_hant.xml, .../de-de.xml (but .../en-us.xml is English).
 LOCALE_SITEMAP = re.compile(r"(?:^|[_/.-])([a-z]{2})(?:[-_][a-z]{2,4})?\.xml(?:\.gz)?$", re.IGNORECASE)
 LOC = re.compile(r"<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]\s]+)", re.IGNORECASE)
