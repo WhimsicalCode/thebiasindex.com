@@ -1326,3 +1326,24 @@
   category: social_media
   product_names: [Buffer]
   hosts: [buffer.com]
+- company: Cake
+  domain: cakeequity.com
+  category: equity_management
+  product_names: [Cake Equity]
+  hosts: [www.cakeequity.com]
+- company: Qapita
+  domain: qapita.com
+  category: equity_management
+  product_names: [Qapita]
+  hosts: [www.qapita.com]
+- company: Cal.com
+  domain: cal.com
+  category: scheduling
+  product_names: [Cal.com]
+  hosts: [cal.com]
+  sitemaps: [https://cal.com/sitemap.xml]  # /discover/sitemap.xml lists user booking pages
+- company: Reclaim
+  domain: reclaim.ai
+  category: scheduling
+  product_names: [Reclaim, Reclaim.ai]
+  hosts: [reclaim.ai]
