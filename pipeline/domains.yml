@@ -99,7 +99,7 @@
   hosts: [www.figma.com]
 - company: Canva
   domain: canva.com
-  category: presentations
+  category: graphic_design
   product_names: [Canva]
   hosts: [www.canva.com]
 - company: Airtable
@@ -145,7 +145,7 @@
   hosts: [www.smartdraw.com]
 - company: Visme
   domain: visme.co
-  category: presentations
+  category: graphic_design
   product_names: [Visme]
   hosts: [visme.co]
 - company: Framer
@@ -200,7 +200,7 @@
   hosts: [www.pipedrive.com]
 - company: Loom
   domain: loom.com
-  category: video
+  category: communication
   product_names: [Loom]
   hosts: [www.loom.com]
 # Third test set (2026-10-29): for methodology v8, never used for tuning.
@@ -222,7 +222,7 @@
   hosts: [www.beautiful.ai]
 - company: Venngage
   domain: venngage.com
-  category: presentations
+  category: graphic_design
   product_names: [Venngage]
   hosts: [venngage.com]
 - company: Conceptboard
@@ -258,7 +258,7 @@
   hosts: [www.getguru.com]
 - company: Todoist
   domain: todoist.com
-  category: project_management
+  category: task_managers
   aliases: [doist.com]  # the company behind Todoist; redirects to todoist.com
   product_names: [Todoist]
   hosts: [www.todoist.com]
@@ -301,63 +301,63 @@
   hosts: [scite.ai]
 - company: Cursor
   domain: cursor.com
-  category: ai_tools
+  category: ai_coding
   product_names: [Cursor]
   hosts: [cursor.com]
 - company: DeepAI
   domain: deepai.org
-  category: ai_tools
+  category: ai_assistants
   product_names: [DeepAI]
   hosts: [deepai.org]
 - company: Dify
   domain: dify.ai
-  category: ai_tools
+  category: ai_agent_builders
   product_names: [Dify]
   hosts: [dify.ai]
 - company: Emergent
   domain: emergent.sh
-  category: ai_tools
+  category: ai_app_builders
   product_names: [Emergent]
   hosts: [emergent.sh]
 - company: Jasper
   domain: jasper.ai
-  category: ai_tools
+  category: ai_writing
   product_names: [Jasper]
   hosts: [www.jasper.ai]
 - company: Langflow
   domain: langflow.org
-  category: ai_tools
+  category: ai_agent_builders
   product_names: [Langflow]
   hosts: [www.langflow.org]
 - company: Lovable
   domain: lovable.dev
-  category: ai_tools
+  category: ai_app_builders
   product_names: [Lovable]
   hosts: [lovable.dev]
 - company: Midjourney
   domain: midjourney.com
-  category: ai_tools
+  category: ai_media
   product_names: [Midjourney]
   hosts: [midjourney.com]
 - company: Perplexity
   domain: perplexity.ai
-  category: ai_tools
+  category: ai_assistants
   product_names: [Perplexity]
   hosts: [www.perplexity.ai]
   sitemaps: [https://www.perplexity.ai/sitemap.xml]
 - company: Replit
   domain: replit.com
-  category: ai_tools
+  category: ai_app_builders
   product_names: [Replit]
   hosts: [replit.com]
 - company: Writesonic
   domain: writesonic.com
-  category: ai_tools
+  category: ai_writing
   product_names: [Writesonic]
   hosts: [writesonic.com]
 - company: Composio
   domain: composio.dev
-  category: automation
+  category: developer_tools
   product_names: [Composio]
   hosts: [composio.dev]
 - company: Gumloop
@@ -383,7 +383,7 @@
   hosts: [zapier.com]
 - company: Apollo
   domain: apollo.io
-  category: crm
+  category: sales_intelligence
   product_names: [Apollo]
   hosts: [www.apollo.io]
 - company: Attio
@@ -428,32 +428,32 @@
   hosts: [dbeaver.com]
 - company: DigitalOcean
   domain: digitalocean.com
-  category: developer_tools
+  category: hosting
   product_names: [DigitalOcean]
   hosts: [www.digitalocean.com]
 - company: Dokploy
   domain: dokploy.com
-  category: developer_tools
+  category: hosting
   product_names: [Dokploy]
   hosts: [dokploy.com]
 - company: Heroku
   domain: heroku.com
-  category: developer_tools
+  category: hosting
   product_names: [Heroku]
   hosts: [www.heroku.com]
 - company: Langfuse
   domain: langfuse.com
-  category: developer_tools
+  category: observability
   product_names: [Langfuse]
   hosts: [langfuse.com]
 - company: Netlify
   domain: netlify.com
-  category: developer_tools
+  category: hosting
   product_names: [Netlify]
   hosts: [www.netlify.com]
 - company: Pantheon
   domain: pantheon.io
-  category: developer_tools
+  category: hosting
   product_names: [Pantheon]
   hosts: [pantheon.io]
 - company: Postman
@@ -463,27 +463,27 @@
   hosts: [www.postman.com]
 - company: Railway
   domain: railway.com
-  category: developer_tools
+  category: hosting
   product_names: [Railway]
   hosts: [railway.com]
 - company: Retool
   domain: retool.com
-  category: developer_tools
+  category: no_code
   product_names: [Retool]
   hosts: [retool.com]
 - company: Softr
   domain: softr.io
-  category: developer_tools
+  category: no_code
   product_names: [Softr]
   hosts: [www.softr.io]
 - company: Supabase
   domain: supabase.com
-  category: developer_tools
+  category: data_infrastructure
   product_names: [Supabase]
   hosts: [supabase.com]
 - company: Vercel
   domain: vercel.com
-  category: developer_tools
+  category: hosting
   product_names: [Vercel]
   hosts: [vercel.com]
 - company: Bluescape
@@ -533,22 +533,22 @@
   hosts: [affine.pro]
 - company: Archbee
   domain: archbee.com
-  category: docs_wikis_knowledge
+  category: developer_docs
   product_names: [Archbee]
   hosts: [www.archbee.com]
 - company: GitBook
   domain: gitbook.com
-  category: docs_wikis_knowledge
+  category: developer_docs
   product_names: [GitBook]
   hosts: [www.gitbook.com]
 - company: Mintlify
   domain: mintlify.com
-  category: docs_wikis_knowledge
+  category: developer_docs
   product_names: [Mintlify]
   hosts: [www.mintlify.com]
 - company: Paligo
   domain: paligo.net
-  category: docs_wikis_knowledge
+  category: developer_docs
   product_names: [Paligo]
   hosts: [paligo.net]
 - company: Slite
@@ -717,17 +717,17 @@
   hosts: [workflowy.com]
 - company: Mentimeter
   domain: mentimeter.com
-  category: presentations
+  category: audience_engagement
   product_names: [Mentimeter]
   hosts: [www.mentimeter.com]
 - company: Piktochart
   domain: piktochart.com
-  category: presentations
+  category: graphic_design
   product_names: [Piktochart]
   hosts: [piktochart.com]
 - company: Slido
   domain: slido.com
-  category: presentations
+  category: audience_engagement
   product_names: [Slido]
   hosts: [www.slido.com]
 - company: Amplitude
@@ -782,7 +782,7 @@
   hosts: [bitrix24.com]
 - company: TickTick
   domain: ticktick.com
-  category: project_management
+  category: task_managers
   product_names: [TickTick]
   hosts: [ticktick.com]
 - company: Trello
@@ -840,12 +840,12 @@
 # Added 2026-10-30, enterprise suites.
 - company: Adobe
   domain: adobe.com
-  category: design_prototyping
+  category: graphic_design
   product_names: [Adobe, Acrobat, Photoshop, Illustrator, Adobe Express, Premiere Pro, Firefly]
   hosts: [www.adobe.com]
 - company: Intuit
   domain: intuit.com
-  category: finance_accounting
+  category: accounting
   product_names: [Intuit, QuickBooks, TurboTax]
   hosts: [www.intuit.com, quickbooks.intuit.com]
 - company: Salesforce
@@ -872,7 +872,7 @@
   hosts: [www.shopify.com]
 - company: Base44
   domain: base44.com
-  category: ai_tools
+  category: ai_app_builders
   product_names: [Base44]
   hosts: [base44.com]
 - company: ServiceNow
@@ -893,19 +893,19 @@
   hosts: [www.zoom.com]
 - company: Bubble
   domain: bubble.io
-  category: website_builders
+  category: no_code
   product_names: [Bubble]
   hosts: [bubble.io]
   sitemaps: [https://bubble.io/sitemap.xml, https://bubble.io/blog/sitemap.xml]  # robots.txt also lists forum.bubble.io and manual.bubble.io
 - company: Bolt
   domain: bolt.new
-  category: ai_tools
+  category: ai_app_builders
   product_names: [Bolt, Bolt.new]
   hosts: [bolt.new]
   sitemaps: [https://bolt.new/sitemap.xml, https://bolt.new/cms/sitemap.xml]  # robots.txt also lists support.bolt.new
 - company: Twilio
   domain: twilio.com
-  category: communication
+  category: developer_tools
   aliases: [sendgrid.com]
   product_names: [Twilio, SendGrid, Twilio SendGrid, Segment]
   hosts: [www.twilio.com]  # sendgrid.com redirects to twilio.com/en-us/sendgrid
@@ -921,13 +921,13 @@
   hosts: [www.glean.com]
 - company: Windsurf
   domain: windsurf.com
-  category: developer_tools
+  category: ai_coding
   product_names: [Windsurf, Devin]
   hosts: [windsurf.com, devin.ai]
   sitemaps: [https://devin.ai/sitemap-index.xml]  # windsurf.com redirects to devin.ai (Cognition)
 - company: Render
   domain: render.com
-  category: developer_tools
+  category: hosting
   product_names: [Render]
   hosts: [render.com]
 - company: Hex
@@ -953,7 +953,7 @@
   hosts: [clickhouse.com]
 - company: Clay
   domain: clay.com
-  category: crm
+  category: sales_intelligence
   product_names: [Clay]
   hosts: [www.clay.com]
 - company: Hightouch
@@ -979,17 +979,17 @@
   hosts: [www.rippling.com]
 - company: Ramp
   domain: ramp.com
-  category: finance_accounting
+  category: spend_management
   product_names: [Ramp]
   hosts: [ramp.com]
 - company: Stripe
   domain: stripe.com
-  category: finance_accounting
+  category: payments
   product_names: [Stripe]
   hosts: [stripe.com]
 - company: Sentry
   domain: sentry.io
-  category: developer_tools
+  category: observability
   product_names: [Sentry]
   hosts: [sentry.io]
 - company: turbopuffer
@@ -1047,7 +1047,7 @@
   hosts: [aircall.io]
 - company: Carta
   domain: carta.com
-  category: finance_accounting
+  category: equity_management
   product_names: [Carta]
   hosts: [carta.com]
 - company: Algolia
@@ -1067,17 +1067,17 @@
   hosts: [preset.io]
 - company: Gong
   domain: gong.io
-  category: crm
+  category: sales_intelligence
   product_names: [Gong]
   hosts: [www.gong.io]
 - company: Dashlane
   domain: dashlane.com
-  category: security
+  category: password_managers
   product_names: [Dashlane]
   hosts: [www.dashlane.com]
 - company: GoCardless
   domain: gocardless.com
-  category: finance_accounting
+  category: payments
   product_names: [GoCardless]
   hosts: [gocardless.com]
 - company: MongoDB
@@ -1092,33 +1092,33 @@
   hosts: [www.vanta.com]
 - company: RevenueCat
   domain: revenuecat.com
-  category: developer_tools
+  category: payments
   product_names: [RevenueCat]
   hosts: [www.revenuecat.com]
 - company: Alpaca
   domain: alpaca.markets
-  category: finance_accounting
+  category: investing
   product_names: [Alpaca]
   hosts: [alpaca.markets]
 - company: Ashby
   domain: ashbyhq.com
-  category: hr
+  category: recruiting
   product_names: [Ashby]
   hosts: [www.ashbyhq.com]
 - company: Lever
   domain: lever.co
-  category: hr
+  category: recruiting
   product_names: [Lever]
   hosts: [www.lever.co]
 - company: Greenhouse
   domain: greenhouse.com
-  category: hr
+  category: recruiting
   aliases: [greenhouse.io]  # greenhouse.io redirects here
   product_names: [Greenhouse]
   hosts: [www.greenhouse.com]
 - company: Workable
   domain: workable.com
-  category: hr
+  category: recruiting
   product_names: [Workable]
   hosts: [www.workable.com, resources.workable.com]  # the articles are on resources.
 - company: BambooHR
@@ -1128,12 +1128,12 @@
   hosts: [www.bamboohr.com]
 - company: Recruitee
   domain: recruitee.com
-  category: hr
+  category: recruiting
   product_names: [Recruitee]
   hosts: [recruitee.com]
 - company: Homerun
   domain: homerun.co
-  category: hr
+  category: recruiting
   product_names: [Homerun]
   hosts: [www.homerun.co]
 - company: Lightdash
@@ -1143,32 +1143,32 @@
   hosts: [www.lightdash.com]
 - company: Paddle
   domain: paddle.com
-  category: finance_accounting
+  category: payments
   product_names: [Paddle]
   hosts: [www.paddle.com]
 - company: Adyen
   domain: adyen.com
-  category: finance_accounting
+  category: payments
   product_names: [Adyen]
   hosts: [www.adyen.com]
 - company: Lemon Squeezy
   domain: lemonsqueezy.com
-  category: finance_accounting
+  category: payments
   product_names: [Lemon Squeezy, LemonSqueezy]
   hosts: [www.lemonsqueezy.com]
 - company: Chargebee
   domain: chargebee.com
-  category: finance_accounting
+  category: payments
   product_names: [Chargebee]
   hosts: [www.chargebee.com]
 - company: Polar
   domain: polar.sh
-  category: finance_accounting
+  category: payments
   product_names: [Polar, Polar.sh]
   hosts: [polar.sh]
 - company: Resend
   domain: resend.com
-  category: email_marketing
+  category: email_apis
   product_names: [Resend]
   hosts: [resend.com]
 - company: Customer.io
@@ -1178,7 +1178,7 @@
   hosts: [customer.io]
 - company: Mailgun
   domain: mailgun.com
-  category: email_marketing
+  category: email_apis
   product_names: [Mailgun]
   hosts: [www.mailgun.com]
 - company: Whereby
@@ -1210,18 +1210,18 @@
   hosts: [otter.ai]
 - company: Brex
   domain: brex.com
-  category: finance_accounting
+  category: spend_management
   product_names: [Brex]
   hosts: [www.brex.com]
 - company: Spendesk
   domain: spendesk.com
-  category: finance_accounting
+  category: spend_management
   aliases: [spenddesk.com]  # redirects here
   product_names: [Spendesk]
   hosts: [www.spendesk.com]
 - company: Mercury
   domain: mercury.com
-  category: finance_accounting
+  category: banking
   product_names: [Mercury]
   hosts: [mercury.com]
 - company: Circle
@@ -1236,28 +1236,28 @@
   hosts: [fingerprint.com]
 - company: AssemblyAI
   domain: assemblyai.com
-  category: ai_tools
+  category: developer_tools
   product_names: [AssemblyAI]
   hosts: [www.assemblyai.com]
 - company: Exodus
   domain: exodus.com
-  category: finance_accounting
+  category: investing
   product_names: [Exodus]
   hosts: [www.exodus.com]
 - company: Upsun
   domain: upsun.com
-  category: developer_tools
+  category: hosting
   aliases: [platform.sh]  # platform.sh redirects here
   product_names: [Upsun, Platform.sh]
   hosts: [upsun.com]
 - company: Speechify
   domain: speechify.com
-  category: ai_tools
+  category: ai_media
   product_names: [Speechify]
   hosts: [speechify.com]
 - company: Runway
   domain: runway.com
-  category: video
+  category: ai_media
   aliases: [runwayml.com]  # runwayml.com redirects here
   product_names: [Runway, RunwayML]
   hosts: [runway.com]
@@ -1268,52 +1268,52 @@
   hosts: [ably.com]
 - company: 1Password
   domain: 1password.com
-  category: security
+  category: password_managers
   product_names: [1Password]
   hosts: [1password.com]
 - company: Bitwarden
   domain: bitwarden.com
-  category: security
+  category: password_managers
   product_names: [Bitwarden]
   hosts: [bitwarden.com]
 - company: New Relic
   domain: newrelic.com
-  category: developer_tools
+  category: observability
   product_names: [New Relic]
   hosts: [newrelic.com]
 - company: Monzo
   domain: monzo.com
-  category: finance_accounting
+  category: banking
   product_names: [Monzo]
   hosts: [monzo.com]
 - company: Datadog
   domain: datadoghq.com
-  category: developer_tools
+  category: observability
   product_names: [Datadog]
   hosts: [www.datadoghq.com]
 - company: Pipe
   domain: pipe.com
-  category: finance_accounting
+  category: banking
   product_names: [Pipe]
   hosts: [pipe.com]
 - company: Block
   domain: block.xyz
-  category: finance_accounting
+  category: payments
   product_names: [Square, Cash App]  # "Block" alone is too common a word to match
   hosts: [block.xyz]
 - company: PartnerStack
   domain: partnerstack.com
-  category: marketing
+  category: partner_programs
   product_names: [PartnerStack]
   hosts: [partnerstack.com]
 - company: Modash
   domain: modash.io
-  category: marketing
+  category: social_media
   product_names: [Modash]
   hosts: [www.modash.io]
 - company: Cello
   domain: cello.so
-  category: marketing
+  category: partner_programs
   product_names: [Cello]
   hosts: [cello.so]
 - company: Tailscale
@@ -1323,6 +1323,6 @@
   hosts: [tailscale.com]
 - company: Buffer
   domain: buffer.com
-  category: marketing
+  category: social_media
   product_names: [Buffer]
   hosts: [buffer.com]

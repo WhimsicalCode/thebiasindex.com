@@ -22,11 +22,15 @@ import yaml
 
 PATH = Path(__file__).resolve().parent / "domains.yml"
 DOMAIN = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$")
-CATEGORIES = {"ai_research", "ai_tools", "automation", "communication", "crm", "data_analytics",
-              "data_infrastructure", "design_prototyping", "developer_tools", "diagramming_whiteboards",
-              "docs_wikis_knowledge", "ecommerce", "email_marketing", "finance_accounting", "forms_surveys",
-              "help_desk", "hr", "marketing", "meeting_notes", "mind_mapping", "notes", "presentations",
-              "product_analytics", "project_management", "scheduling", "security", "video", "website_builders"}
+CATEGORIES = {"accounting", "ai_agent_builders", "ai_app_builders", "ai_assistants", "ai_coding", "ai_media",
+              "ai_research", "ai_writing", "audience_engagement", "automation", "banking", "communication", "crm",
+              "data_analytics", "data_infrastructure", "design_prototyping", "developer_docs", "developer_tools",
+              "diagramming_whiteboards", "docs_wikis_knowledge", "ecommerce", "email_apis", "email_marketing",
+              "equity_management", "forms_surveys", "graphic_design", "help_desk", "hosting", "hr", "investing",
+              "meeting_notes", "mind_mapping", "no_code", "notes", "observability", "partner_programs",
+              "password_managers", "payments", "presentations", "product_analytics", "project_management",
+              "recruiting", "sales_intelligence", "scheduling", "security", "social_media", "spend_management",
+              "task_managers", "website_builders"}
 
 
 def _within(host, domain):
