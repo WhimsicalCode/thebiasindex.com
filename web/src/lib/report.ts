@@ -133,6 +133,18 @@ export function againstOf(company: Company): string {
   )
 }
 
+/** "folk is listed as one option in 3 compare pages by Attio and Softr.", or "" when no other company lists it. */
+export function listedOf(company: Company): string {
+  const { listedIn, listedBy } = mentionsFor(company.slug)
+  if (listedIn === 0) return ""
+  const names = listedBy.map(c => c.company)
+  const by =
+    names.length <= 3
+      ? names.join(names.length === 2 ? " and " : ", ").replace(/, ([^,]*)$/, " and $1")
+      : `${names.slice(0, 3).join(", ")} and ${fmt(names.length - 3)} more`
+  return `${company.company} is listed as one option in ${fmt(listedIn)} compare ${listedIn === 1 ? "page" : "pages"} by ${by}.`
+}
+
 /** The verdict as one paragraph: the meta description, /<domain>.json and llms.txt. */
 export function summaryOf(company: Company): string {
   const { headline, found, total } = verdictOf(company)
@@ -196,6 +208,7 @@ export function reportOf(company: Company) {
       red_flags_per_page: round(mentions.aimedAtAverage),
       // Pages where it is one entry in a list: counted, but their red flags may be about the other entries.
       listed_in_pages: mentions.listedIn,
+      listed_by: mentions.listedBy.map(c => c.slug),
       by_company: mentions.aimedAt.map(row => ({
         domain: row.company.slug,
         company: row.company.company,

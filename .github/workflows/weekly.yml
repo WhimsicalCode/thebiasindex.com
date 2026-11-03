@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: "0 5 * * 0" # Sundays 05:00 UTC, when most sites see the least traffic
   workflow_dispatch:
+    inputs:
+      only_new:
+        description: "Only read new companies and the ones we couldn't read (skip those read fine in the last 6 days)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write # to publish the release
@@ -38,7 +43,7 @@ jobs:
       - name: Discover, fetch and score
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: uv run pipeline/run.py
+        run: uv run pipeline/run.py ${{ inputs.only_new && '--skip-read-within-days 6' || '' }}
 
       - uses: actions/setup-node@v4
         with:

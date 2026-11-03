@@ -20,7 +20,7 @@ import {
 } from "@/lib/db"
 import { href } from "@/lib/deploy"
 import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
-import { againstOf, standingOf, summaryOf, verdictOf } from "@/lib/report"
+import { againstOf, listedOf, standingOf, summaryOf, verdictOf } from "@/lib/report"
 import { companyDataset } from "@/lib/schema"
 import { REPO_URL } from "@/lib/site"
 
@@ -141,6 +141,8 @@ const ANSWER = {
           )
         }
       </div>
+
+      {against.length === 0 && mentions.listedIn > 0 && <p class="muted listed-only">{listedOf(company)}</p>}
 
       {company.biasLoad > 0 && <FlagSplit company={company} />}
     </section>
@@ -928,6 +930,12 @@ const ANSWER = {
   .listed {
     margin: 28px 0 0;
     max-width: 72ch;
+  }
+
+  // Listed by others, but no page is aimed at the company: one line under the facts.
+  .listed-only {
+    margin: 20px 0 0;
+    font-size: 14px;
   }
 
   .take {

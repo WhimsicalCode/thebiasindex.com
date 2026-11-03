@@ -13,7 +13,9 @@ Usage: uv run pipeline/run.py [--db data/bias_index.sqlite] [--raw data/raw/live
   blocking the crawler are marked unreachable.
 - A page is only sent to Luna when its text or the methodology version changed since the last run.
 - Non-English pages (by <html lang>), near-empty pages and pages that redirect off the company's domains are
-  stored but never scored.
+  stored but never scored. A page read before that only fails this week (blocked, rate-limited) keeps its score.
+- --skip-read-within-days 6 leaves out the companies read fine in the last 6 days: a quick run for new companies and
+  the ones we couldn't read.
 - Last, mentions.py records which companies each compare page is aimed at or lists, from its URL, title and
   headings (no AI).
 
@@ -31,7 +33,7 @@ import time
 import unicodedata
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -50,12 +52,16 @@ MIN_TEXT_CHARS = 200
 # Short text shared word for word by many of a company's pages is its site template, not the page: DigitalOcean's
 # tutorials load their article with JavaScript, so without it every one of them reads as the same footer.
 TEMPLATE_MAX_CHARS, TEMPLATE_MIN_PAGES = 1000, 5
-# Cleared when a page is skipped, so a page that can't be read this week doesn't keep counting with an old score.
+# Opting out in robots.txt is for good, unlike a block or a rate limit.
+OPTED_OUT = "disallowed by robots.txt"
+# Cleared when a page is skipped for good (gone, not English, redirects away...), so it stops counting with an old
+# score. A page that only fails this week (blocked, rate-limited, timing out) keeps its data, like a page we ran out
+# of time for.
 CLASSIFICATION = ("page_type", "page_type_confidence", "p_best_at_everything", "p_no_honest_exit",
                   "p_no_admitted_weakness", "p_vague_attacks", "p_uneven_scrutiny", "score", "unclear",
                   "methodology", "model", "classified_at")
-# A company whose every page fails with one of these is marked unreachable ("crawler blocked" on the site),
-# including a robots.txt opt-out: we don't score what we couldn't read.
+# A company whose every page fails with one of these is marked unreachable ("crawler blocked" on the site), unless
+# pages read before keep its scores; a robots.txt opt-out always counts: we don't score what we may not read.
 BLOCKED_ERRORS = ("blocked", "host blocked the crawler", "disallowed by robots.txt")
 
 SCHEMA = """
@@ -192,6 +198,9 @@ def main():
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--host-budget-minutes", type=float, default=60,
                         help="Most time spent fetching one site per run; pages left over keep their previous scores")
+    parser.add_argument("--skip-read-within-days", type=float, default=0,
+                        help="Skip companies read fine in the last N days (their data stays as it is): a run for new "
+                             "companies and the ones we couldn't read")
     parser.add_argument("--reuse-fetched-since", default="",
                         help="ISO time: reuse pages saved under --raw since then instead of fetching them again "
                              "(to resume an interrupted run)")
@@ -217,6 +226,12 @@ def main():
         # Companies dropped from domains.yml leave the site; their pages stay in the database as history.
         listed = [entry["domain"] for entry in entries]
         db.execute(f"update companies set monitored = slug in ({','.join('?' * len(listed))})", listed)
+    if args.skip_read_within_days:
+        since = (datetime.now(UTC) - timedelta(days=args.skip_read_within_days)).isoformat(timespec="seconds")
+        fresh = {slug for (slug,) in db.execute(
+            "select slug from companies where status = 'ok' and updated_at >= ?", (since,))}
+        entries = [entry for entry in entries if entry["domain"] not in fresh]
+        print(f"skipping {len(fresh)} companies read fine since {since[:16]}", flush=True)
     started = now()
     run_id = db.execute("insert into runs (started_at, methodology, model) values (?, ?, ?)",
                         (started, classify.METHODOLOGY_VERSION, classify.MODEL)).lastrowid
@@ -265,14 +280,18 @@ def main():
     fetched = fetch_all(pages, raw_dir, reuse_since, args.host_budget_minutes * 60)
     print(f"fetched in {time.monotonic() - fetch_started:.0f}s", flush=True)
 
-    # Hosts where every page was blocked: mark the company unreachable.
-    blocked_by_company = defaultdict(lambda: [0, 0])
+    # Hosts where every page was blocked: mark the company unreachable, unless pages read before keep its scores
+    # (Pipedrive rate-limits some weeks). Opting out in robots.txt always counts.
+    blocked_by_company = defaultdict(lambda: [0, 0, 0])
     for page in pages:
         counts = blocked_by_company[company_for[page["page_id"]][0]]
         counts[1] += 1
         counts[0] += fetched[page["page_id"]]["error"] in BLOCKED_ERRORS
-    for slug, (blocked, total) in blocked_by_company.items():
-        if total and blocked == total:
+        counts[2] += fetched[page["page_id"]]["error"] == OPTED_OUT
+    for slug, (blocked, total, opted_out) in blocked_by_company.items():
+        read_before = db.execute("select 1 from pages where company_slug = ? and page_type is not null limit 1",
+                                 (slug,)).fetchone()
+        if total and blocked == total and (opted_out or not read_before):
             db.execute("update companies set status = 'unreachable' where slug = ?", (slug,))
 
     shared = Counter()
@@ -296,6 +315,14 @@ def main():
                 db.execute("insert into pages (url, page_id, company_slug, first_seen, last_seen, skip_reason) "
                            "values (?, ?, ?, ?, ?, ?)",
                            (page["url"], page["page_id"], slug, started, started, "not checked yet"))
+            continue
+        status = result["status"] or 0
+        failed = (result["error"] and result["error"] != OPTED_OUT) or status in fetch_pages.BLOCKED_STATUSES \
+            or status >= 500
+        read_before = db.execute("select 1 from pages where url = ? and page_type is not null", (page["url"],))
+        if failed and read_before.fetchone():
+            # Read before, failing this week: it stays current with its previous data and score.
+            db.execute("update pages set last_seen = ? where url = ?", (started, page["url"]))
             continue
         text_path = raw_dir / "text" / f"{page['page_id']}.md"
         text = text_path.read_text(encoding="utf-8") if text_path.exists() else ""

@@ -270,6 +270,8 @@ export type Mentions = {
   aimedAtAverage: number | null
   /** Other companies' compare pages where this one is one entry in a list. Their red flags aren't counted for it. */
   listedIn: number
+  /** The companies whose pages list it, most pages first. */
+  listedBy: Company[]
   /** Companies this one's compare pages are aimed at, most pages first. */
   aimsAt: { company: Company; pages: number }[]
 }
@@ -280,7 +282,14 @@ export function mentionsFor(slug: string): Mentions {
 }
 
 function queryMentions(slug: string): Mentions {
-  const empty = { aimedAt: [], aimedAtPages: 0, aimedAtAverage: null, listedIn: 0, aimsAt: [] }
+  const empty = {
+    aimedAt: [],
+    aimedAtPages: 0,
+    aimedAtAverage: null,
+    listedIn: 0,
+    listedBy: [],
+    aimsAt: [],
+  }
   const hasMentions = open()
     .prepare("select 1 from sqlite_master where type = 'table' and name = 'mentions'")
     .get()
@@ -333,6 +342,10 @@ function queryMentions(slug: string): Mentions {
     listedIn: pairs
       .filter(p => p.mentioned === slug && p.kind === "listed")
       .reduce((sum, p) => sum + p.n, 0),
+    listedBy: pairs
+      .filter(p => p.mentioned === slug && p.kind === "listed")
+      .sort((a, b) => b.n - a.n)
+      .map(p => bySlug.get(p.publisher) as Company),
     aimsAt: pairs
       .filter(p => p.publisher === slug && p.kind === "about")
       .map(p => ({ company: bySlug.get(p.mentioned) as Company, pages: p.n }))
