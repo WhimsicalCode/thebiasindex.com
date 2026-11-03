@@ -1207,3 +1207,19 @@
   category: meeting_notes
   product_names: [Otter, Otter.ai]
   hosts: [otter.ai]
+- company: Brex
+  domain: brex.com
+  category: finance_accounting
+  product_names: [Brex]
+  hosts: [www.brex.com]
+- company: Spendesk
+  domain: spendesk.com
+  category: finance_accounting
+  aliases: [spenddesk.com]  # redirects here
+  product_names: [Spendesk]
+  hosts: [www.spendesk.com]
+- company: Mercury
+  domain: mercury.com
+  category: finance_accounting
+  product_names: [Mercury]
+  hosts: [mercury.com]
