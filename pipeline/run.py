@@ -226,6 +226,12 @@ def main():
         # Companies dropped from domains.yml leave the site; their pages stay in the database as history.
         listed = [entry["domain"] for entry in entries]
         db.execute(f"update companies set monitored = slug in ({','.join('?' * len(listed))})", listed)
+    # Names and categories come from domains.yml, also for companies this run doesn't read.
+    for entry in entries:
+        db.execute("update companies set company = ?, aliases = ?, category = ?, product_names = ? where slug = ?",
+                   (entry["company"], json.dumps(entry.get("aliases", [])), entry["category"],
+                    json.dumps(entry["product_names"]), entry["domain"]))
+    listed_entries = entries
     if args.skip_read_within_days:
         since = (datetime.now(UTC) - timedelta(days=args.skip_read_within_days)).isoformat(timespec="seconds")
         fresh = {slug for (slug,) in db.execute(
@@ -412,7 +418,7 @@ def main():
     # Headings are only used to find the companies a compare page lists.
     db.execute("update pages set headings = null where page_type is not 'competitor_comparison'")
     db.commit()
-    compare_pages, about, listed = mentions.rebuild(db, entries if not only else None)
+    compare_pages, about, listed = mentions.rebuild(db, listed_entries if not only else None)
     print(f"mentions: {compare_pages:,} compare pages, {about:,} about a company, {listed:,} listing one", flush=True)
     db.execute(
         """update runs set finished_at = ?, companies = ?, pages_fetched = ?, pages_classified = ?,
