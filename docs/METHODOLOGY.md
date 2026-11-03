@@ -84,8 +84,10 @@ two "cons" for the vendor each followed by "That said…", and three vague cons 
   drops out once the page is gone.
 - **Fetching:** as `BiasIndexBot`, honoring `robots.txt`, one request at a time per host and at least a second apart
   (or the site's `Crawl-delay`), asking for English. A host that blocks three requests in a row is marked
-  unreachable rather than retried harder. A company whose every page is blocked, or that opts out in `robots.txt`,
-  shows as "crawler blocked", with no score. Details for site owners: [`/bot`](https://thebiasindex.com/bot).
+  unreachable rather than retried harder. A page we read before that is blocked or rate-limited this week keeps its
+  last score until it can be read again. A company we have never been able to read, or that opts out in
+  `robots.txt`, shows as "crawler blocked", with no score. Details for site owners:
+  [`/bot`](https://thebiasindex.com/bot).
 - **Scored only if** the page answers HTTP 200, its `<html lang>` is English (or missing), at most 30% of the
   letters in its text are non-Latin (pages tagged English but written in Japanese, say), and it has at least 200
   characters of text that aren't the site's template: the same text, under 1,000 characters, on 5 or more of the
