@@ -259,6 +259,7 @@
 - company: Todoist
   domain: todoist.com
   category: project_management
+  aliases: [doist.com]  # the company behind Todoist; redirects to todoist.com
   product_names: [Todoist]
   hosts: [www.todoist.com]
 
@@ -1223,3 +1224,105 @@
   category: finance_accounting
   product_names: [Mercury]
   hosts: [mercury.com]
+- company: Circle
+  domain: circle.so
+  category: communication
+  product_names: [Circle]
+  hosts: [circle.so]
+- company: Fingerprint
+  domain: fingerprint.com
+  category: security
+  product_names: [Fingerprint]
+  hosts: [fingerprint.com]
+- company: AssemblyAI
+  domain: assemblyai.com
+  category: ai_tools
+  product_names: [AssemblyAI]
+  hosts: [www.assemblyai.com]
+- company: Exodus
+  domain: exodus.com
+  category: finance_accounting
+  product_names: [Exodus]
+  hosts: [www.exodus.com]
+- company: Upsun
+  domain: upsun.com
+  category: developer_tools
+  aliases: [platform.sh]  # platform.sh redirects here
+  product_names: [Upsun, Platform.sh]
+  hosts: [upsun.com]
+- company: Speechify
+  domain: speechify.com
+  category: ai_tools
+  product_names: [Speechify]
+  hosts: [speechify.com]
+- company: Runway
+  domain: runway.com
+  category: video
+  aliases: [runwayml.com]  # runwayml.com redirects here
+  product_names: [Runway, RunwayML]
+  hosts: [runway.com]
+- company: Ably
+  domain: ably.com
+  category: developer_tools
+  product_names: [Ably]
+  hosts: [ably.com]
+- company: 1Password
+  domain: 1password.com
+  category: security
+  product_names: [1Password]
+  hosts: [1password.com]
+- company: Bitwarden
+  domain: bitwarden.com
+  category: security
+  product_names: [Bitwarden]
+  hosts: [bitwarden.com]
+- company: New Relic
+  domain: newrelic.com
+  category: developer_tools
+  product_names: [New Relic]
+  hosts: [newrelic.com]
+- company: Monzo
+  domain: monzo.com
+  category: finance_accounting
+  product_names: [Monzo]
+  hosts: [monzo.com]
+- company: Datadog
+  domain: datadoghq.com
+  category: developer_tools
+  product_names: [Datadog]
+  hosts: [www.datadoghq.com]
+- company: Pipe
+  domain: pipe.com
+  category: finance_accounting
+  product_names: [Pipe]
+  hosts: [pipe.com]
+- company: Block
+  domain: block.xyz
+  category: finance_accounting
+  product_names: [Square, Cash App]  # "Block" alone is too common a word to match
+  hosts: [block.xyz]
+- company: PartnerStack
+  domain: partnerstack.com
+  category: marketing
+  product_names: [PartnerStack]
+  hosts: [partnerstack.com]
+- company: Modash
+  domain: modash.io
+  category: marketing
+  product_names: [Modash]
+  hosts: [www.modash.io]
+- company: Cello
+  domain: cello.so
+  category: marketing
+  product_names: [Cello]
+  hosts: [cello.so]
+- company: Tailscale
+  domain: tailscale.com
+  category: security
+  product_names: [Tailscale]
+  hosts: [tailscale.com]
+- company: Buffer
+  domain: buffer.com
+  category: marketing
+  product_names: [Buffer]
+  hosts: [buffer.com]
