@@ -1347,3 +1347,13 @@
   category: scheduling
   product_names: [Reclaim, Reclaim.ai]
   hosts: [reclaim.ai]
+- company: ThoughtSpot
+  domain: thoughtspot.com
+  category: data_analytics
+  product_names: [ThoughtSpot]
+  hosts: [www.thoughtspot.com]
+- company: Omni
+  domain: omni.co
+  category: data_analytics
+  product_names: [Omni Analytics]  # a bare "Omni" is too common a word
+  hosts: [omni.co]
