@@ -8,6 +8,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "pull-db": "node scripts/pull-db.ts",
     "biome": "biome check .",
     "biome-fix": "biome check --write .",
     "check-astro": "astro check",
