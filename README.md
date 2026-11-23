@@ -6,8 +6,8 @@ Vendors write pages about their rivals ("X vs Y", "X alternatives"), and AI assi
 genuine reviews. thebiasindex.com finds every one of those pages in a company's sitemap, asks five yes/no questions
 about it, and lights a lamp for each yes. Every week, in the open.
 
-Built by [Whimsical](https://whimsical.com), scored like everyone else. Why: [The anatomy of a SaaS comparison
-page](https://whimsical.com/blog/the-anatomy-of-a-saas-comparison-page).
+Built by [Whimsical](https://whimsical.com) to keep its own comparison pages honest, and scored like everyone else:
+[thebiasindex.com/whimsical.com](https://thebiasindex.com/whimsical.com/).
 
 ## Five lamps, five questions
 

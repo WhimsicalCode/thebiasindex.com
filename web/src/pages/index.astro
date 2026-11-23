@@ -20,7 +20,7 @@ import {
 import { href } from "@/lib/deploy"
 import { fmt, inkEnd, perPage, redFlags } from "@/lib/format"
 import { siteDataset } from "@/lib/schema"
-import { REPO_URL, WHY_URL } from "@/lib/site"
+import { REPO_URL } from "@/lib/site"
 
 const all = companies()
 const ranked = byRedFlags(all)
@@ -197,12 +197,11 @@ const urlOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "")
         <div>
           <h2 class="display h2">Who made this</h2>
           <p>
-            The Bias Index is made by Whimsical. We make a workspace for docs, boards and diagrams, so some of the
+            The Bias Index is made by <a href={href("/whimsical.com")}>Whimsical</a>. We make a workspace for docs, boards and diagrams, so some of the
             companies here are our competitors.
           </p>
           <p>
-            Most comparison pages are a game rigged in the author’s favor. We don’t publish any, and if we ever do,
-            they’ll be fair, and scored here by the same rules as everyone else’s.
+            Most comparison pages are a game rigged in the author’s favor. This index is how we keep ours honest: they’re scored here every week, by the same rules as everyone else’s.
           </p>
           <p>
             You shouldn’t have to take our word for any of it, so everything is open: the scores, the code, and the
@@ -212,7 +211,7 @@ const urlOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "")
             <a href={href("/methodology")}>How the scoring works</a>
             <a href={`${REPO_URL}/releases/latest`}>Download the data</a>
             <a href={REPO_URL}>The code on GitHub</a>
-            <a href={WHY_URL}>Why we built it</a>
+            <a href={href("/whimsical.com")}>How our pages score</a>
           </div>
         </div>
       </div>

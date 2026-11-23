@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro"
 import { href } from "@/lib/deploy"
-import { REPO_URL, WHY_URL } from "@/lib/site"
+import { REPO_URL } from "@/lib/site"
 ---
 
 <BaseLayout
@@ -28,11 +28,10 @@ import { REPO_URL, WHY_URL } from "@/lib/site"
         </p>
         <h2>Why we built it</h2>
         <p>
-          What we think of these pages is in <a href={WHY_URL}>The anatomy of a SaaS comparison page</a>: every product is
-          somehow easier, more powerful and cheaper than everyone else, depending on whose page you read. We used to publish them too. We took them down once we realized they were silly and not aligned with who we
-          are. Whimsical no longer publishes pages comparing itself with competitors, and
-          <a href={href("/whimsical.com")}>the index checks that too</a>. The index doesn't take
-          that post's word for anything: it scores every company, Whimsical included, with the same five questions.
+          On most comparison pages, every product is somehow easier, more powerful and cheaper than everyone else,
+          depending on whose page you read. Whimsical publishes comparison pages too, and the index is how we keep
+          ours objective, honest and never deceptive: it scores them every week with the same five questions as
+          everyone else's. <a href={href("/whimsical.com")}>See how they score</a>.
         </p>
         <h2>What we don't do</h2>
         <ul>

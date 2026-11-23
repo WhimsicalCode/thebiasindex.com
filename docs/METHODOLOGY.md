@@ -10,10 +10,8 @@ job of the page, and it isn't what we score. We score whether the page is **hone
 competitor does better, who should pick the competitor, what the vendor's own product is bad at, and whether the
 criticism of the competitor is specific and proportionate.
 
-Whimsical's post [The anatomy of a SaaS comparison page](https://whimsical.com/blog/the-anatomy-of-a-saas-comparison-page)
-put the failure in one line: *"every product is simultaneously easier to learn than everyone
-else, more powerful than everyone else, better for enterprises, and somehow also better for small teams.
-Statistically, this should not be possible."* The five questions turn that into checks a model can answer from the
+The failure fits in one line: on its own page, every product is easier to learn than everyone else, more powerful
+than everyone else, better for enterprises, and somehow also better for small teams. The five questions turn that into checks a model can answer from the
 page text alone.
 
 ## The five questions
