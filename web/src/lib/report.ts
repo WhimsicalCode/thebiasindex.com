@@ -307,19 +307,18 @@ export function sameAnswersOf(pages: Page[]): number | null {
   return top >= 3 && top * 2 >= pages.length ? top : null
 }
 
-/** The one thing a buyer can check on a vendor's page: does it say when the other tool is the better choice? From
- * question 2 ("Never says when to pick the rival"). */
-export function honestExitOf({ who, whom, pages }: PairSide): string {
-  const says = pages.filter(p => p.answers[1] !== "flag").length
+/** The one thing a buyer can check on a vendor's page: does it admit anything its own product can't do? From
+ * question 3 ("Admits no weakness"), which is about the publisher, so it holds whichever rival the page is about.
+ * Only clear passes count; an unclear answer isn't an admission. */
+export function admitsWeaknessOf({ who, pages }: PairSide): string {
+  const admits = pages.filter(p => p.answers[2] === "ok").length
   const A = who.company
-  const B = whom.company
   if (pages.length === 1)
-    return `${A}’s page ${says ? "says" : "never says"} when ${B} is the better choice.`
-  if (says === 0)
-    return `None of ${A}’s ${fmt(pages.length)} pages say when ${B} is the better choice.`
-  if (says === pages.length)
-    return `All ${fmt(pages.length)} of ${A}’s pages say when ${B} is the better choice.`
-  return `${says * 2 < pages.length ? "Only " : ""}${fmt(says)} of ${A}’s ${fmt(pages.length)} pages ${says === 1 ? "says" : "say"} when ${B} is the better choice.`
+    return `${A}’s page ${admits ? "admits something" : "admits nothing"} ${A} can’t do.`
+  if (admits === 0) return `None of ${A}’s ${fmt(pages.length)} pages admit anything ${A} can’t do.`
+  if (admits === pages.length)
+    return `All ${fmt(pages.length)} of ${A}’s pages admit something ${A} can’t do.`
+  return `${admits * 2 < pages.length ? "Only " : ""}${fmt(admits)} of ${A}’s ${fmt(pages.length)} pages ${admits === 1 ? "admits" : "admit"} something ${A} can’t do.`
 }
 
 /** Machine-readable pair, served as /<a>/vs/<b>.json. */
@@ -343,7 +342,7 @@ export function pairReportOf(pair: Pair) {
       about: side.whom.slug,
       pages_count: side.pages.length,
       red_flags_per_page: round(side.perPage),
-      says_when_the_other_is_better: honestExitOf(side),
+      admits_a_weakness: admitsWeaknessOf(side),
       pages: side.pages.map(p => ({
         url: p.url,
         title: p.title,

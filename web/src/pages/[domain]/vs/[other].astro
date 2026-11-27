@@ -18,7 +18,7 @@ import {
 import { href } from "@/lib/deploy"
 import { fmt } from "@/lib/format"
 import {
-  honestExitOf,
+  admitsWeaknessOf,
   type PairSide,
   pairNoteOf,
   pairSummaryOf,
@@ -207,12 +207,12 @@ const others = (slug: string) =>
         <div>
           <h2 class="display h2">Choosing between {A} and {B}?</h2>
           <p class="muted">
-            Their own comparison pages are written to win you over. One thing gives a fair page away: it tells you when
-            you’d be better off with the other tool.
+            Their own comparison pages are written to win you over. One thing gives a fair page away: it admits
+            something its own product can’t do.
           </p>
         </div>
         <div>
-          {withPages.map(side => <p class="tell">{honestExitOf(side)}</p>)}
+          {withPages.map(side => <p class="tell">{admitsWeaknessOf(side)}</p>)}
         </div>
       </div>
     </section>

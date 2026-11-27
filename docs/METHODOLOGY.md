@@ -159,8 +159,10 @@ each one's compare pages about the other, side by side.
   more fairly; a smaller gap isn't called, because with one to three pages a side it is noise. Otherwise both are
   fair (1 red flag per page or fewer each), neither is, or they write about each other about as fairly. "Fair" on a
   pair page is about those pages only: a company is a fair player only across 3 or more of all its compare pages.
-- **"Says when the other is the better choice"** is question 2 ("Never says when to pick the rival") read the other
-  way round.
+- **"Admits something it can't do"** is question 3 ("Admits no weakness") read the other way round, counting clear
+  passes only. It is about the publisher's own product, so it holds whichever rival a page is about; question 2 isn't
+  used there, because an "alternatives" page may say when another tool, not the pair's other company, is the better
+  choice.
 - **We score the pages, not the products:** a pair page never says which tool is better.
 
 ## How reliable is it
