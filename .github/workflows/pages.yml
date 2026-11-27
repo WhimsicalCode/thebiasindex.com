@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 # Builds the site from the latest data release and publishes it to GitHub Pages on every push to main. The weekly
 # run also calls this workflow after publishing new data.
 # The address comes from GitHub (configure-pages), so it follows the repository name and any custom domain.
+# Once deployed, the pages that changed are sent to IndexNow, so search engines come back for them: every week after
+# the data run (every company page shows the run's date), and after a push only for the pages it changed.
 on:
   push:
     branches: [main]
@@ -21,6 +23,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      indexnow: ${{ steps.indexnow.outputs.request }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +56,15 @@ jobs:
           DIRECTORY_URLS: "true"
         run: npm run build
 
+      # Compared with the live site, so this runs before the deploy; the request is sent after it.
+      - name: List the pages that changed (IndexNow)
+        id: indexnow
+        working-directory: web
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          DIRECTORY_URLS: "true"
+        run: echo "request=$(node scripts/indexnow.ts)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/out
@@ -65,3 +78,13 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # The site is live either way, so a refused request is flagged here without failing the deploy.
+      - name: Tell search engines which pages changed (IndexNow)
+        if: needs.build.outputs.indexnow != ''
+        continue-on-error: true
+        env:
+          REQUEST: ${{ needs.build.outputs.indexnow }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST https://api.indexnow.org/indexnow \
+            --header "Content-Type: application/json; charset=utf-8" --data-binary "$REQUEST"
