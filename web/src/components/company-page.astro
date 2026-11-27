@@ -15,6 +15,8 @@ import {
   mentionsFor,
   type Page,
   pagesFor,
+  pairHref,
+  pairsFor,
   QUESTIONS,
   scoredCompanies,
   unrankedStatus,
@@ -30,6 +32,8 @@ export const PAGE_SIZE = 100
 const SHOWN = 25
 // Companies shown in "Everyone against" before "Show all".
 const AGAINST_SHOWN = 10
+// Pair pages linked under the facts before "All".
+const HEADS_SHOWN = 6
 
 type Props = { company: Company; page: number }
 const { company, page } = Astro.props
@@ -54,6 +58,9 @@ const mentions = mentionsFor(company.slug)
 const against = mentions.aimedAt
 const againstMax = Math.max(1, ...against.map(row => row.pages.length))
 const perPageOf = (n: number | null) => (n === null ? "–" : n.toFixed(1))
+
+// The company's pair pages (/<a>/vs/<b>), most pages first.
+const heads = pairsFor(company.slug)
 
 // Where the company stands, and the verdict (shared with its JSON, llms.txt and the share image).
 const standing = standingOf(company)
@@ -144,6 +151,24 @@ const ANSWER = {
       </div>
 
       {against.length === 0 && mentions.listedIn > 0 && <p class="muted listed-only">{listedOf(company)}</p>}
+
+      {
+        heads.length > 0 && (
+          <div class="aims heads" data-heads>
+            <span class="muted">Head to head</span>
+            {heads.map((pair, i) => (
+              <a class="aim" href={pairHref(pair)} hidden={i >= HEADS_SHOWN}>
+                {pair.a.company} vs {pair.b.company} <b>{fmt(pair.aOnB.length + pair.bOnA.length)}</b>
+              </a>
+            ))}
+            {heads.length > HEADS_SHOWN && (
+              <button class="aim" type="button" data-show-heads>
+                All {fmt(heads.length)}
+              </button>
+            )}
+          </div>
+        )
+      }
 
       {company.biasLoad > 0 && <FlagSplit company={company} />}
     </section>
@@ -438,6 +463,17 @@ const ANSWER = {
     show?.addEventListener("click", () => {
       expanded = true
       render()
+    })
+  })
+
+  // Head to head: the first pair pages until "All".
+  document.querySelectorAll<HTMLElement>("[data-heads]").forEach(heads => {
+    const show = heads.querySelector<HTMLButtonElement>("[data-show-heads]")
+    show?.addEventListener("click", () => {
+      heads.querySelectorAll<HTMLElement>(".aim").forEach(link => {
+        link.hidden = false
+      })
+      show.hidden = true
     })
   })
 
@@ -828,6 +864,21 @@ const ANSWER = {
 
   .aim:hover {
     border-color: #1a1630;
+  }
+
+  .aim[hidden] {
+    display: none;
+  }
+
+  // The pair pages, under the facts (not in the mockup).
+  .heads {
+    margin-top: 40px;
+  }
+
+  button.aim {
+    background: #fff;
+    font: inherit;
+    cursor: pointer;
   }
 
   .aim b {

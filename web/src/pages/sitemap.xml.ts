@@ -1,7 +1,7 @@
-// /sitemap.xml: every page, so crawlers (search engines and LLMs) find each company without following links.
+// /sitemap.xml: every page (pair pages in one order only), so crawlers (search engines and LLMs) find each company without following links.
 import type { APIRoute } from "astro"
 import { PAGE_SIZE } from "@/components/company-page.astro"
-import { companies, companyPath, latestRun } from "@/lib/db"
+import { companies, companyPath, latestRun, pairPath, pairs } from "@/lib/db"
 import { absoluteUrl } from "@/lib/deploy"
 
 const PAGES = ["/", "/companies", "/methodology", "/about", "/colophon", "/bot"]
@@ -20,6 +20,7 @@ export const GET: APIRoute = () => {
         ...(c.candidates > 0 ? [`${companyPath(c)}/candidates`] : []),
       ]
     }),
+    ...pairs().map(pairPath),
   ]
   const urls = paths
     .map(

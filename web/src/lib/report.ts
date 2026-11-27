@@ -6,10 +6,13 @@ import {
   companies,
   companyPath,
   latestRun,
+  MADE_BY,
   mentionsFor,
   notMeasured,
   type Page,
+  type Pair,
   pagesFor,
+  pairPath,
   QUESTIONS,
   RULES,
   silentCompanies,
@@ -225,6 +228,127 @@ export function reportOf(company: Company) {
       company: row.company.company,
       url: absoluteUrl(companyPath(row.company)),
       pages: row.pages,
+    })),
+  }
+}
+
+// Pair pages (/<a>/vs/<b>): what two companies wrote about each other.
+
+/** One side of a pair: who wrote the pages, about whom, and their red flags per page (null without pages). */
+export type PairSide = { who: Company; whom: Company; pages: Page[]; perPage: number | null }
+
+/** A difference in red flags per page smaller than this isn't called: with 1 to 3 pages a side, it's noise. */
+const PAIR_GAP = 1
+
+const averageOf = (pages: Page[]) =>
+  pages.length ? pages.reduce((sum, p) => sum + (p.score ?? 0), 0) / pages.length : null
+
+/** Both sides of a pair, in the pair's order. */
+export function sidesOf(pair: Pair): [PairSide, PairSide] {
+  return [
+    { who: pair.a, whom: pair.b, pages: pair.aOnB, perPage: averageOf(pair.aOnB) },
+    { who: pair.b, whom: pair.a, pages: pair.bOnA, perPage: averageOf(pair.bOnA) },
+  ]
+}
+
+/** The verdict in one sentence: who writes about the other more fairly, or that only one of them writes at all. */
+export function pairVerdictOf(pair: Pair): string {
+  const [x, y] = sidesOf(pair)
+  const A = pair.a.company
+  const B = pair.b.company
+  if (x.perPage === null || y.perPage === null) {
+    const side = x.perPage === null ? y : x
+    const n = side.pages.length
+    return `Only ${side.who.company} has written about ${side.whom.company}${n > 1 ? `: ${fmt(n)} pages` : ""}.`
+  }
+  if (Math.abs(x.perPage - y.perPage) >= PAIR_GAP) {
+    const [fair, unfair] = x.perPage < y.perPage ? [A, B] : [B, A]
+    return `${fair} writes about ${unfair} more fairly than ${unfair} writes about ${fair}.`
+  }
+  if (x.perPage <= RULES.FAIR_AVERAGE && y.perPage <= RULES.FAIR_AVERAGE)
+    return `${A} and ${B} write about each other fairly.`
+  if (x.perPage > RULES.FAIR_AVERAGE && y.perPage > RULES.FAIR_AVERAGE)
+    return `Neither ${A} nor ${B} writes fairly about the other.`
+  return `${A} and ${B} write about each other about as fairly.`
+}
+
+/** Each side's numbers in a sentence: "Lucid’s 5 pages about Miro raise 3.6 of our five red flags per page." */
+export function pairNumbersOf(pair: Pair): string {
+  return sidesOf(pair)
+    .filter(side => side.perPage !== null)
+    .map(({ who, whom, pages, perPage }) =>
+      pages.length === 1
+        ? `${who.company}’s page about ${whom.company} raises ${redFlags(Number(perPage?.toFixed(0)))} of our five.`
+        : `${who.company}’s ${fmt(pages.length)} pages about ${whom.company} raise ${perPage?.toFixed(1)} of our five red flags per page.`
+    )
+    .join(" ")
+}
+
+/** The verdict and the numbers: the meta description, the pair's JSON and llms.txt. */
+export function pairSummaryOf(pair: Pair): string {
+  return `${pairVerdictOf(pair)} ${pairNumbersOf(pair)}`
+}
+
+/** "We score the pages, not the products.", and that Whimsical made the index when it is one side. */
+export function pairNoteOf(pair: Pair): string {
+  const maker = [pair.a, pair.b].find(c => c.slug === MADE_BY)
+  return `We score the pages, not the products.${maker ? ` ${maker.company} made The Bias Index and is scored by the same rules.` : ""}`
+}
+
+/** How many pages give the most common five answers, when that's most of them (at least 3, half or more): pages
+ * stamped from one template. Null otherwise. */
+export function sameAnswersOf(pages: Page[]): number | null {
+  const counts = new Map<string, number>()
+  for (const p of pages) {
+    const key = p.answers.join(" ")
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const top = Math.max(0, ...counts.values())
+  return top >= 3 && top * 2 >= pages.length ? top : null
+}
+
+/** The one thing a buyer can check on a vendor's page: does it admit anything its own product can't do? From
+ * question 3 ("Admits no weakness"), which is about the publisher, so it holds whichever rival the page is about.
+ * Only clear passes count; an unclear answer isn't an admission. */
+export function admitsWeaknessOf({ who, pages }: PairSide): string {
+  const admits = pages.filter(p => p.answers[2] === "ok").length
+  const A = who.company
+  if (pages.length === 1)
+    return `${A}’s page ${admits ? "admits something" : "admits nothing"} ${A} can’t do.`
+  if (admits === 0) return `None of ${A}’s ${fmt(pages.length)} pages admit anything ${A} can’t do.`
+  if (admits === pages.length)
+    return `All ${fmt(pages.length)} of ${A}’s pages admit something ${A} can’t do.`
+  return `${admits * 2 < pages.length ? "Only " : ""}${fmt(admits)} of ${A}’s ${fmt(pages.length)} pages ${admits === 1 ? "admits" : "admit"} something ${A} can’t do.`
+}
+
+/** Machine-readable pair, served as /<a>/vs/<b>.json. */
+export function pairReportOf(pair: Pair) {
+  const run = latestRun()
+  return {
+    url: absoluteUrl(pairPath(pair)),
+    companies: [pair.a, pair.b].map(c => ({
+      domain: c.slug,
+      company: c.company,
+      url: absoluteUrl(companyPath(c)),
+    })),
+    verdict: pairVerdictOf(pair),
+    summary: pairSummaryOf(pair),
+    run_date: run?.startedAt.slice(0, 10) ?? null,
+    methodology: { version: run?.methodology ?? null, url: absoluteUrl("/methodology") },
+    source: REPO_URL,
+    questions: QUESTIONS.map((q, i) => ({ id: `q${i + 1}`, label: q.label, question: q.question })),
+    sides: sidesOf(pair).map(side => ({
+      publisher: side.who.slug,
+      about: side.whom.slug,
+      pages_count: side.pages.length,
+      red_flags_per_page: round(side.perPage),
+      admits_a_weakness: admitsWeaknessOf(side),
+      pages: side.pages.map(p => ({
+        url: p.url,
+        title: p.title,
+        red_flags: p.score,
+        answers: Object.fromEntries(p.answers.map((a, i) => [`q${i + 1}`, ANSWER[a]])),
+      })),
     })),
   }
 }

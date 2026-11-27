@@ -1,8 +1,16 @@
-// schema.org structured data (Dataset) for the home page and company pages, so search engines and dataset search
+// schema.org structured data (Dataset) for the home page, company pages and pair pages, so search engines and dataset search
 // know what the numbers are, where to download them, and under which license.
-import { type Company, companyPath, latestRun, QUESTIONS, RULES } from "@/lib/db"
+import {
+  type Company,
+  companyPath,
+  latestRun,
+  type Pair,
+  pairPath,
+  QUESTIONS,
+  RULES,
+} from "@/lib/db"
 import { absoluteUrl } from "@/lib/deploy"
-import { summaryOf } from "@/lib/report"
+import { pairSummaryOf, summaryOf } from "@/lib/report"
 import { REPO_URL } from "@/lib/site"
 
 const DOWNLOAD = `${REPO_URL}/releases/latest/download`
@@ -88,6 +96,31 @@ export function companyDataset(company: Company) {
         "@type": "DataDownload",
         encodingFormat: "application/json",
         contentUrl: absoluteUrl(`/${company.slug}.json`),
+      },
+    ],
+  }
+}
+
+/** Two companies' pages about each other. */
+export function pairDataset(pair: Pair) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: `The Bias Index: ${pair.a.company} vs ${pair.b.company}`,
+    description: pairSummaryOf(pair),
+    url: absoluteUrl(pairPath(pair)),
+    about: [pair.a, pair.b].map(c => ({
+      "@type": "Organization",
+      name: c.company,
+      url: `https://${c.slug}`,
+    })),
+    isPartOf: { "@type": "Dataset", name: "The Bias Index", url: absoluteUrl("/") },
+    ...common(),
+    distribution: [
+      {
+        "@type": "DataDownload",
+        encodingFormat: "application/json",
+        contentUrl: absoluteUrl(`${pairPath(pair)}.json`),
       },
     ],
   }

@@ -2,7 +2,7 @@ import { writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { defineConfig } from "astro/config"
-import { aliasRedirects } from "./src/lib/db"
+import { aliasRedirects, pairRedirects } from "./src/lib/db"
 import { BASE, DIRECTORY_URLS, href, SITE_ORIGIN } from "./src/lib/deploy"
 import { repoUrl } from "./src/lib/site"
 
@@ -35,13 +35,16 @@ function repoLinks() {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+/** Alias domains and former paths to company pages, and each pair page's other order to the pair page. */
+const allRedirects = () => ({ ...aliasRedirects(), ...pairRedirects() })
+
 /** Cloudflare Pages serves `_redirects` as real 301s; Astro's own redirect pages stay as a fallback. */
 function cloudflareRedirects() {
   return {
     name: "cloudflare-redirects",
     hooks: {
       "astro:build:done": ({ dir }: { dir: URL }) => {
-        const lines = Object.entries(aliasRedirects()).map(
+        const lines = Object.entries(allRedirects()).map(
           ([from, to]) => `${BASE}${from} ${href(to)} 301`
         )
         writeFileSync(new URL("_redirects", dir), `${lines.join("\n")}\n`)
@@ -58,9 +61,9 @@ export default defineConfig({
   base: BASE || "/",
   output: "static",
   outDir: "out",
-  // Other domains people know a company by: /draw.io goes to /drawio.com.
+  // Other domains people know a company by: /draw.io goes to /drawio.com. /miro.com/vs/lucid.co to /lucid.co/vs/miro.com.
   redirects: Object.fromEntries(
-    Object.entries(aliasRedirects()).map(([from, to]) => [from, href(to)])
+    Object.entries(allRedirects()).map(([from, to]) => [from, href(to)])
   ),
   markdown: { rehypePlugins: [repoLinks] },
   integrations: [cloudflareRedirects()],
