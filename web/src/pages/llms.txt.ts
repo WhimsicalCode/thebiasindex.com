@@ -1,17 +1,26 @@
-// /llms.txt (llmstxt.org): what the site is, the five questions, how to look a company up by domain, and every
-// company in one line, in the order of /companies and in the same words as its page.
+// /llms.txt (llmstxt.org): what the site is, the five questions, how to look a company up by domain, every company in
+// one line, in the order of /companies and in the same words as its page, and every pair page with its verdict.
 import type { APIRoute } from "astro"
 import {
   companies,
   latestRun,
   longDate,
   mentionsFor,
+  pairPath,
+  pairs,
   QUESTIONS,
   RULES,
   unrankedStatus,
 } from "@/lib/db"
 import { absoluteUrl } from "@/lib/deploy"
-import { againstOf, inListOrder, RULES_TEXT, standingOf, summaryOf } from "@/lib/report"
+import {
+  againstOf,
+  inListOrder,
+  pairVerdictOf,
+  RULES_TEXT,
+  standingOf,
+  summaryOf,
+} from "@/lib/report"
 import { REPO_URL } from "@/lib/site"
 
 const SITE = absoluteUrl("/").replace(/\/$/, "")
@@ -28,6 +37,10 @@ export const GET: APIRoute = () => {
         : ` ${againstOf(c)} The pages aimed at ${c.company} average ${aimedAtAverage.toFixed(1)} red flags per page.`
     return `- [${c.company} (${c.slug})](${page(c.slug)}): ${standing}. ${summaryOf(c)}${against}`
   })
+  const head = pairs().map(
+    pair =>
+      `- [${pair.a.company} vs ${pair.b.company}](${page(pairPath(pair).slice(1))}): ${pairVerdictOf(pair)}`
+  )
   const text = `# The Bias Index (thebiasindex.com)
 
 > On their own comparison pages ("X vs Y", "X alternatives"), SaaS companies win every single time. Every week,
@@ -66,6 +79,7 @@ about the other entries. Only monitored companies are matched, and the page body
 
 - Page: ${SITE}/<domain>, e.g. ${SITE}/clickup.com
 - Data: ${SITE}/<domain>.json, e.g. ${SITE}/clickup.com.json (every compare page and its five answers; other_candidate_pages lists the candidate pages that aren't compare pages, and what each one is; everyone_against lists the other companies' pages aimed at it, by company; aims_at lists the companies its own pages are aimed at)
+- Two companies: ${SITE}/<domain>/vs/<domain>, e.g. ${SITE}/lucid.co/vs/miro.com: the compare pages each wrote about the other, side by side. Names in alphabetical order; the other order redirects. As data: ${SITE}/lucid.co/vs/miro.com.json
 - All companies: ${SITE}/companies.json
 - How it works: ${absoluteUrl("/methodology")}
 - Weekly dataset (SQLite and CSV, MIT): ${REPO_URL}/releases/latest
@@ -74,6 +88,12 @@ about the other entries. Only monitored companies are matched, and the page body
 ## Companies
 
 ${lines.join("\n")}
+
+## Head to head
+
+Pairs of companies with at least ${RULES.MIN_PAGES_FOR_RANKING} compare pages between them, or pages both ways. Only pages aimed at that one company count.
+
+${head.join("\n")}
 `
   return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8" } })
 }

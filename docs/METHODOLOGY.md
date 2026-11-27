@@ -143,6 +143,26 @@ Checked by hand on 400 random compare pages: 1 of 429 matches was wrong (99.8%),
 rivals named in an address, title or list heading were found. The misses are entries written in prose ("Best for
 infographics - Venngage") and products not in `product_names`.
 
+### Head to head
+
+Two companies that write about each other get a page of their own, `/<domain>/vs/<domain>` (`/lucid.co/vs/miro.com`):
+each one's compare pages about the other, side by side.
+
+- **Which pages:** a compare page counts for the pair when it is aimed at that one company. ClickUp's "Airtable vs
+  Notion" is aimed at Airtable too, so it counts on Notion's page under "Everyone against", but not on ClickUp vs
+  Notion.
+- **Which pairs:** at least 3 compare pages between them, as for ranking a company, or at least one page each way.
+  Below that, a pair page would be one vendor page with nothing to set it against.
+- **One page per pair:** the companies are in alphabetical order; the other order (`/miro.com/vs/lucid.co`)
+  redirects.
+- **The verdict** compares each side's red flags per page. A gap of 1 or more says which one writes about the other
+  more fairly; a smaller gap isn't called, because with one to three pages a side it is noise. Otherwise both are
+  fair (1 red flag per page or fewer each), neither is, or they write about each other about as fairly. "Fair" on a
+  pair page is about those pages only: a company is a fair player only across 3 or more of all its compare pages.
+- **"Says when the other is the better choice"** is question 2 ("Never says when to pick the rival") read the other
+  way round.
+- **We score the pages, not the products:** a pair page never says which tool is better.
+
 ## How reliable is it
 
 Every methodology version is tested against labeled pages before it scores anything. The full log, failures

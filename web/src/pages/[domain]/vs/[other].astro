@@ -1,0 +1,684 @@
+---
+// /<a>/vs/<b> (/lucid.co/vs/miro.com): what two companies wrote about each other, scored on the same five questions.
+// One page per pair, the companies in name order; the other order redirects here (pairRedirects in lib/db.ts).
+import BaseLayout from "@/layouts/base-layout.astro"
+import {
+  companyHref,
+  latestRun,
+  longDate,
+  type Page,
+  type Pair,
+  pairHref,
+  pairPath,
+  pairs,
+  pairsFor,
+  QUESTIONS,
+  RULES,
+} from "@/lib/db"
+import { href } from "@/lib/deploy"
+import { fmt } from "@/lib/format"
+import {
+  honestExitOf,
+  type PairSide,
+  pairNoteOf,
+  pairSummaryOf,
+  pairVerdictOf,
+  sameAnswersOf,
+  sidesOf,
+} from "@/lib/report"
+import { pairDataset } from "@/lib/schema"
+import { REPO_URL } from "@/lib/site"
+
+export function getStaticPaths() {
+  return pairs().map(pair => ({
+    params: { domain: pair.a.slug, other: pair.b.slug },
+    props: { pair },
+  }))
+}
+
+// Pages listed on each side before "Show all", and other pairs linked for each company.
+const SHOWN = 5
+const MORE = 6
+
+const { pair } = Astro.props as { pair: Pair }
+const A = pair.a.company
+const B = pair.b.company
+const run = latestRun()
+const sides = sidesOf(pair)
+const withPages = sides.filter(side => side.pages.length > 0)
+const path = pairPath(pair)
+
+const urlOf = (p: Page) => p.url.replace(/^https?:\/\/(www\.)?/, "")
+const summary = (p: Page) => {
+  const yes = QUESTIONS.filter((_, i) => p.answers[i] === "flag").map(q => q.label.toLowerCase())
+  return `${p.score ?? 0} of 5 red flags${yes.length ? `: ${yes.join(", ")}` : ""}`
+}
+const ANSWER = {
+  flag: "Red flag",
+  ok: "Pass: not a red flag",
+  unclear: "Unclear, not counted",
+} as const
+
+/** Five dots filled up to the red flags per page: 3.6 is three full dots and one 60% full. */
+const meter = (perPage: number) =>
+  Array.from({ length: 5 }, (_, i) => `${Math.round(Math.max(0, Math.min(1, perPage - i)) * 100)}%`)
+const isFair = (side: PairSide) => side.perPage !== null && side.perPage <= RULES.FAIR_AVERAGE
+const pagesLine = (side: PairSide) => {
+  const same = sameAnswersOf(side.pages)
+  const n = side.pages.length
+  return `${fmt(n)} ${n === 1 ? "page" : "pages"}${same ? `, ${fmt(same)} of them with exactly the same red flags` : ""}`
+}
+
+/** The other pairs of a company, most pages first. */
+const others = (slug: string) =>
+  pairsFor(slug)
+    .filter(other => pairPath(other) !== path)
+    .slice(0, MORE)
+    .map(other => ({ pair: other, name: (other.a.slug === slug ? other.b : other.a).company }))
+---
+
+<BaseLayout
+  title={`${A} vs ${B}: what each says about the other, scored for bias · The Bias Index`}
+  description={pairSummaryOf(pair)}
+  section="companies"
+  alternates={[{ href: href(`${path}.json`), type: "application/json", title: `${A} vs ${B}, as JSON` }]}
+  jsonLd={pairDataset(pair)}
+>
+  <main>
+    <section class="wrap">
+      <a class="back" href={href("/companies")}>← Every company</a>
+      <div class="title">
+        <h1 class="display vs-h1">{A} <span class="vs-word">vs</span> {B}</h1>
+        <ul class="meta">
+          <li><a href={companyHref(pair.a)}>{pair.a.slug}</a> · <a href={companyHref(pair.b)}>{pair.b.slug}</a></li>
+          {run && <li class="muted">Read on {longDate(run.startedAt)}</li>}
+        </ul>
+      </div>
+      <p class="verdict">{pairVerdictOf(pair)}</p>
+      <p class="note muted">{pairNoteOf(pair)} <a href={href("/methodology")}>How it works</a></p>
+
+      <div class="board">
+        {
+          sides.map(side => (
+            <div class:list={["side", { fair: isFair(side) }]}>
+              <h2>
+                {side.who.company} on {side.whom.company}
+              </h2>
+              {side.perPage === null ? (
+                <p class="none">
+                  {side.who.company} hasn’t written about {side.whom.company}.
+                </p>
+              ) : (
+                <>
+                  <div class="num">
+                    <b>{side.perPage.toFixed(1)}</b>
+                    <span>{side.perPage === 1 ? "red flag" : "red flags"} per page, out of 5</span>
+                  </div>
+                  <div class="meter" aria-hidden="true">
+                    {meter(side.perPage).map(fill => (
+                      <i style={`--fill: ${fill}`} />
+                    ))}
+                  </div>
+                  <p class="sub">
+                    {pagesLine(side)}
+                    {isFair(side) && (
+                      <>
+                        {" · "}
+                        <span class="ok">fair</span>
+                      </>
+                    )}
+                  </p>
+                </>
+              )}
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="wrap section" data-lists>
+      <div class="section-head">
+        <h2 class="display h2">What each wrote about the other</h2>
+        <p class="muted">Each page is scored on five questions. A filled dot is a red flag.</p>
+      </div>
+      <div class="legend" aria-hidden="true">
+        {
+          QUESTIONS.map(q => (
+            <span>
+              <i style={`background: ${q.color}`} />
+              {q.label}
+            </span>
+          ))
+        }
+      </div>
+      <div class="lists">
+        {
+          sides.map(side => (
+            <div class="list">
+              <h3>
+                {side.who.company} on {side.whom.company}
+              </h3>
+              {side.pages.length === 0 && <p class="none">No pages.</p>}
+              {side.pages.map((p, i) => (
+                <div class="row" hidden={i >= SHOWN}>
+                  <div class="row-main">
+                    <a class="row-title" href={p.url} rel="nofollow noopener">
+                      {p.title || urlOf(p)}
+                    </a>
+                    <div class="row-url">{urlOf(p)}</div>
+                  </div>
+                  <div class="ans" role="img" aria-label={summary(p)}>
+                    {p.answers.map((answer, q) => (
+                      <i
+                        class:list={["a", { [`y${q + 1}`]: answer === "flag" }]}
+                        data-label={QUESTIONS[q].label}
+                        data-value={ANSWER[answer]}
+                        data-question={QUESTIONS[q].question}
+                        data-color={QUESTIONS[q].color}
+                      />
+                    ))}
+                  </div>
+                  <span class="score">{p.score}</span>
+                </div>
+              ))}
+              {side.pages.length > SHOWN && (
+                <button class="show" type="button" data-show>
+                  Show all {fmt(side.pages.length)} pages
+                </button>
+              )}
+            </div>
+          ))
+        }
+      </div>
+      <noscript>
+        <style>
+          .row[hidden] {
+            display: grid !important;
+          }
+          [data-show] {
+            display: none;
+          }
+        </style>
+      </noscript>
+    </section>
+
+    <section class="wrap section">
+      <div class="choose">
+        <div>
+          <h2 class="display h2">Choosing between {A} and {B}?</h2>
+          <p class="muted">
+            Their own comparison pages are written to win you over. One thing gives a fair page away: it tells you when
+            you’d be better off with the other tool.
+          </p>
+        </div>
+        <div>
+          {withPages.map(side => <p class="tell">{honestExitOf(side)}</p>)}
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="end">
+        <div>
+          <h3>More head-to-heads</h3>
+          {
+            [pair.a, pair.b].map(company => (
+              <p>
+                <span class="muted">{company.company}:</span>{" "}
+                {others(company.slug).map(other => (
+                  <>
+                    <a href={pairHref(other.pair)}>{other.name}</a>,{" "}
+                  </>
+                ))}
+                <a href={companyHref(company)}>all of {company.company}’s</a>
+              </p>
+            ))
+          }
+        </div>
+        <div>
+          <h3>Take the data with you</h3>
+          <p>
+            <a href={href(`${path}.json`)}>{path.slice(1)}.json</a>, or the
+            <a href={`${REPO_URL}/releases/latest`}>whole index</a>.
+          </p>
+          <p>
+            <span class="muted">Think we got one wrong?</span>
+            <a href={`${REPO_URL}/issues/new`}>Open an issue</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import "@/lib/segment-tip"
+
+  // Each side lists its first pages until "Show all".
+  document.querySelectorAll<HTMLElement>("[data-lists] .list").forEach(list => {
+    const show = list.querySelector<HTMLButtonElement>("[data-show]")
+    show?.addEventListener("click", () => {
+      list.querySelectorAll<HTMLElement>(".row").forEach(row => {
+        row.hidden = false
+      })
+      show.hidden = true
+    })
+  })
+</script>
+
+<style lang="scss">
+  .back {
+    display: inline-block;
+    margin-top: 32px;
+    font-size: 14px;
+  }
+
+  .title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 48px;
+    align-items: end;
+    margin-top: 20px;
+  }
+
+  // Both names at company-page scale, "vs" quiet between them.
+  .vs-h1 {
+    margin: 0;
+    font-size: 120px;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+  }
+
+  .vs-word {
+    margin: 0 0.15em;
+    font-family: "Monsical", ui-monospace, monospace;
+    font-weight: 400;
+    font-size: 0.3em;
+    letter-spacing: 0;
+    color: #5f5a72;
+    vertical-align: 0.55em;
+  }
+
+  .meta {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: 14px;
+    text-align: right;
+  }
+
+  .verdict {
+    max-width: 22ch;
+    margin: 56px 0 0;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .note {
+    margin: 16px 0 0;
+    font-size: 14px;
+  }
+
+  // The scoreboard: each side's red flags per page, as a number and as five dots filled to it.
+  .board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    margin-top: 56px;
+  }
+
+  .side {
+    padding-top: 20px;
+    border-top: 1px solid #1a1630;
+
+    h2 {
+      margin: 0;
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.015em;
+    }
+  }
+
+  .num {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 12px;
+
+    b {
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    span {
+      font-size: 14px;
+      color: #5f5a72;
+    }
+  }
+
+  .meter {
+    --ink: #1a1630;
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+
+    i {
+      display: block;
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--ink) var(--fill), transparent var(--fill));
+    }
+  }
+
+  .fair .meter {
+    --ink: #1c6b4a;
+  }
+
+  .sub {
+    margin: 14px 0 0;
+    font-size: 14px;
+    color: #5f5a72;
+  }
+
+  .ok {
+    color: #1c6b4a;
+  }
+
+  .none {
+    max-width: 30ch;
+    margin: 12px 0 0;
+    color: #5f5a72;
+  }
+
+  .section {
+    padding-top: 128px;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: end;
+    margin-bottom: 28px;
+
+    p {
+      margin: 0;
+      max-width: 54ch;
+    }
+  }
+
+  .h2 {
+    margin: 0;
+    font-size: 48px;
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    margin-bottom: 28px;
+    font-size: 13px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    i {
+      display: block;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+    }
+  }
+
+  // The pages, side by side, as the company pages list them.
+  .lists {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+
+    h3 {
+      margin: 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1a1630;
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.015em;
+    }
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 28px;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e6e3ec;
+  }
+
+  .row[hidden] {
+    display: none;
+  }
+
+  .row-title {
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .row-url {
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 12px;
+    color: #5f5a72;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ans {
+    display: flex;
+    gap: 7px;
+  }
+
+  .a {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #d4d0dc;
+    border-radius: 999px;
+    background: #fff;
+  }
+
+  @each $i, $color in (1: #e9631c, 2: #2d63e0, 3: #12a06a, 4: #3b1e6e, 5: #ec3e7b) {
+    .a.y#{$i} {
+      border-color: $color;
+      background: $color;
+    }
+  }
+
+  .score {
+    font-family: "Monsical", ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 22px;
+    text-align: right;
+  }
+
+  .show {
+    height: 52px;
+    margin-top: 20px;
+    padding: 0 24px;
+    border: 1.5px solid #1a1630;
+    border-radius: 10px;
+    background: #fff;
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1630;
+    cursor: pointer;
+  }
+
+  .choose {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: start;
+
+    .h2 {
+      margin-bottom: 24px;
+    }
+
+    p {
+      margin: 0 0 16px;
+      max-width: 54ch;
+    }
+  }
+
+  .tell {
+    font-family: "Dinsical", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
+
+  .end {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    padding-top: 28px;
+    border-top: 1px solid #1a1630;
+    font-size: 14px;
+
+    h3 {
+      margin: 0 0 12px;
+      font-family: "Dinsical", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.015em;
+    }
+
+    p {
+      margin: 0 0 8px;
+    }
+  }
+
+  @container page (max-width: 760px) {
+    .back {
+      margin-top: 12px;
+    }
+
+    .title {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .vs-h1 {
+      font-size: 60px;
+    }
+
+    .vs-word {
+      display: block;
+      margin: 8px 0 6px;
+      font-size: 16px;
+      vertical-align: baseline;
+    }
+
+    .meta {
+      margin: 0;
+      text-align: left;
+    }
+
+    .verdict {
+      margin-top: 32px;
+      font-size: 28px;
+    }
+
+    .board {
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .side h2 {
+      font-size: 18px;
+    }
+
+    .num {
+      flex-direction: column;
+      gap: 4px;
+
+      b {
+        font-size: 56px;
+      }
+    }
+
+    .meter {
+      gap: 5px;
+
+      i {
+        width: 18px;
+        height: 18px;
+        border-width: 1.5px;
+      }
+    }
+
+    .section {
+      padding-top: 80px;
+    }
+
+    .section-head {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .h2 {
+      font-size: 34px;
+    }
+
+    .lists,
+    .end {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 48px;
+    }
+
+    .choose {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 16px;
+    }
+
+    .row-main {
+      grid-column: 1 / -1;
+    }
+
+    .row-url {
+      white-space: normal;
+      word-break: break-all;
+    }
+  }
+</style>

@@ -353,6 +353,82 @@ function queryMentions(slug: string): Mentions {
   }
 }
 
+/** Two companies and their compare pages about each other: a pair page at /<a>/vs/<b>. */
+export type Pair = {
+  /** In name order, so each pair has one page: Lucid vs Miro, and /miro.com/vs/lucid.co redirects. */
+  a: Company
+  b: Company
+  /** a's compare pages aimed at b alone, and b's at a, most red flags first. */
+  aOnB: Page[]
+  bOnA: Page[]
+}
+
+/** Every pair with a page: at least 3 compare pages between them (as for ranking a company), or pages both ways.
+ * Most pages first. Only pages aimed at that one company count: ClickUp's "Airtable vs Notion" is about Airtable too,
+ * so it is one of ClickUp's pages about Notion on Notion's page, but not on ClickUp vs Notion. */
+export function pairs(): Pair[] {
+  return cached("pairs", queryPairs)
+}
+
+function queryPairs(): Pair[] {
+  const hasMentions = open()
+    .prepare("select 1 from sqlite_master where type = 'table' and name = 'mentions'")
+    .get()
+  if (!hasMentions) return []
+  const bySlug = new Map(companies().map(c => [c.slug, c]))
+  const rows = open()
+    .prepare(
+      `select m.company_slug as publisher, m.mentioned_slug as mentioned, pages.url, pages.title, pages.page_type,
+         pages.score, pages.unclear, pages.skip_reason, ${QUESTIONS.map(q => `pages.${q.key}`).join(", ")}
+       from mentions m join pages on pages.url = m.url
+       where m.kind = 'about' and pages.page_type = 'competitor_comparison' and pages.${currentPagesWhere()}
+         and not exists (select 1 from mentions other where other.url = m.url and other.kind = 'about'
+                         and other.mentioned_slug <> m.mentioned_slug)
+       order by pages.score desc, pages.url`
+    )
+    .all() as Record<string, string | number | null>[]
+  const byPair = new Map<string, Pair>()
+  for (const row of rows) {
+    const publisher = bySlug.get(String(row.publisher))
+    const mentioned = bySlug.get(String(row.mentioned))
+    if (!publisher || !mentioned) continue
+    const [a, b] = inNameOrder(publisher, mentioned)
+    const key = `${a.slug} ${b.slug}`
+    const pair = byPair.get(key) ?? { a, b, aOnB: [], bOnA: [] }
+    ;(publisher === a ? pair.aOnB : pair.bOnA).push(toPage(row))
+    byPair.set(key, pair)
+  }
+  const total = (pair: Pair) => pair.aOnB.length + pair.bOnA.length
+  return [...byPair.values()]
+    .filter(
+      pair => total(pair) >= MIN_PAGES_FOR_RANKING || (pair.aOnB.length > 0 && pair.bOnA.length > 0)
+    )
+    .sort((x, y) => total(y) - total(x) || pairPath(x).localeCompare(pairPath(y)))
+}
+
+/** Two companies in the order of a pair page: by name, whatever the case (folk before HubSpot). */
+export function inNameOrder(x: Company, y: Company): [Company, Company] {
+  const order =
+    x.company.localeCompare(y.company, "en", { sensitivity: "base" }) ||
+    x.slug.localeCompare(y.slug)
+  return order <= 0 ? [x, y] : [y, x]
+}
+
+/** The pairs a company is part of, most pages first. */
+export function pairsFor(slug: string): Pair[] {
+  return pairs().filter(pair => pair.a.slug === slug || pair.b.slug === slug)
+}
+
+/** The pair page's path, e.g. "/lucid.co/vs/miro.com". */
+export function pairPath(pair: Pick<Pair, "a" | "b">): string {
+  return `/${pair.a.slug}/vs/${pair.b.slug}`
+}
+
+/** A link to the pair page, with the deployment's base path. */
+export function pairHref(pair: Pick<Pair, "a" | "b">): string {
+  return href(pairPath(pair))
+}
+
 export const RULES = { RED_FLAG, OK, MIN_PAGES_FOR_RANKING, FAIR_AVERAGE }
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {
@@ -516,5 +592,12 @@ export function aliasRedirects(): Record<string, string> {
       [formerPath(FORMER_NAMES[c.slug] ?? c.company), companyPath(c)],
       ...(c.scoredPages > 100 ? [[`${companyPath(c)}/1`, companyPath(c)]] : []),
     ])
+  )
+}
+
+/** The other order of each pair page, e.g. { "/miro.com/vs/lucid.co": "/lucid.co/vs/miro.com" }. */
+export function pairRedirects(): Record<string, string> {
+  return Object.fromEntries(
+    pairs().map(pair => [`/${pair.b.slug}/vs/${pair.a.slug}`, pairPath(pair)])
   )
 }

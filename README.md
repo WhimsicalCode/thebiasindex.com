@@ -40,6 +40,7 @@ players (1 red flag per page or fewer, across at least 3 pages) aren't ranked; t
 |---|---|
 | `thebiasindex.com/<domain>` | The company page, e.g. [`/clickup.com`](https://thebiasindex.com/clickup.com), with "Everyone against" it: the other companies' pages aimed at it ([how](docs/METHODOLOGY.md#who-writes-about-whom)) |
 | `thebiasindex.com/<domain>.json` | The same numbers as data, with every scored page and its five answers, and the pages aimed at it |
+| `thebiasindex.com/<domain>/vs/<domain>` | Two companies' pages about each other, side by side, e.g. [`/lucid.co/vs/miro.com`](https://thebiasindex.com/lucid.co/vs/miro.com) ([which pairs](docs/METHODOLOGY.md#head-to-head)); add `.json` for the data |
 | `thebiasindex.com/companies.json` | Every company |
 | `thebiasindex.com/llms.txt` | What the index is and how to read it, for assistants |
 
